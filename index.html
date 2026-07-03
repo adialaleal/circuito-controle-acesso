@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Acesso — 3 Portas · ESP32 + MQTT</title>
+<style>
+  :root{
+    --bg:#0e1116;
+    --panel:#151a21;
+    --panel2:#1a212b;
+    --line:#2a3340;
+    --ink:#e8edf3;
+    --muted:#8a94a3;
+    --amber:#ffb224;          /* leitura do "multímetro" */
+    --board:#12241c;          /* verde PCB */
+    --board-line:#2f6b4f;
+    --silk:#bfe8d2;           /* serigrafia */
+    --w12:#ff5c5c;            /* +12V */
+    --wgnd:#93a0b1;           /* GND */
+    --w5:#ffa94d;             /* +5V */
+    --w33:#c084fc;            /* 3V3 */
+    --ws1:#ffd43b;            /* GPIO23 -> IN1 */
+    --ws2:#69db7c;            /* GPIO22 -> IN2 */
+    --ws3:#4dd4f7;            /* GPIO21 -> IN3 */
+    --wl1:#ff8fa3;            /* NC1 -> ímã 1 */
+    --wl2:#f0abfc;            /* NC2 -> ímã 2 */
+    --wl3:#ffc078;            /* NC3 -> ímã 3 */
+    --mono:ui-monospace,"Cascadia Code","JetBrains Mono",Consolas,"Roboto Mono",monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(1100px 500px at 75% -10%, rgba(47,107,79,.10), transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:15px;
+    line-height:1.55;
+  }
+  header{
+    padding:26px 22px 14px;
+    border-bottom:1px solid var(--line);
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.18em;
+    color:var(--amber);
+    text-transform:uppercase;
+  }
+  h1{
+    margin:6px 0 4px;
+    font-family:var(--mono);
+    font-size:clamp(19px,3.4vw,28px);
+    font-weight:600;
+    letter-spacing:-.01em;
+  }
+  header p{margin:0;color:var(--muted);max-width:70ch}
+  .tabs{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+  .tab{
+    font-family:var(--mono);font-size:12.5px;letter-spacing:.04em;
+    background:var(--panel);color:var(--muted);
+    border:1px solid var(--line);border-radius:8px;
+    padding:8px 14px;cursor:pointer;transition:.15s;
+  }
+  .tab:hover{color:var(--ink)}
+  .tab.on{background:#22160a;border-color:#7a5516;color:var(--amber)}
+  .tab:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+  main{padding:18px 22px 60px;max-width:1500px;margin:0 auto}
+  .stage{
+    display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start;
+  }
+  @media(max-width:980px){.stage{grid-template-columns:1fr}}
+
+  .canvas-wrap{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:auto;
+    position:relative;
+  }
+  .canvas-wrap svg{display:block;min-width:1050px;width:100%;height:auto}
+  #view3d{display:none}
+  #three-wrap{position:relative;height:640px;border-radius:12px;overflow:hidden;background:#0a0d12;border:1px solid var(--line)}
+  #three-wrap canvas{display:block}
+  #hint3d{
+    position:absolute;left:12px;bottom:10px;font-family:var(--mono);font-size:11px;
+    color:var(--muted);background:rgba(10,13,18,.7);padding:5px 9px;border-radius:6px;pointer-events:none;
+  }
+  #label3d{
+    position:absolute;display:none;pointer-events:none;
+    font-family:var(--mono);font-size:12px;color:#0d0d0d;background:var(--amber);
+    padding:4px 9px;border-radius:5px;transform:translate(12px,-24px);white-space:nowrap;
+    box-shadow:0 4px 14px rgba(0,0,0,.4);z-index:5;
+  }
+
+  /* ---------- inspetor (estilo multímetro) ---------- */
+  aside{position:sticky;top:12px;display:flex;flex-direction:column;gap:14px}
+  .inspector{
+    background:linear-gradient(180deg,#181f29,#131920);
+    border:1px solid var(--line);border-radius:12px;padding:14px 16px;
+    min-height:170px;
+  }
+  .inspector .tag{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--muted);
+    text-transform:uppercase;
+  }
+  .inspector h2{
+    margin:6px 0 8px;font-family:var(--mono);font-size:17px;color:var(--amber);font-weight:600;
+  }
+  .inspector .desc{color:var(--ink);font-size:13.5px;margin:0 0 10px}
+  .inspector ul{margin:0;padding-left:16px;color:var(--muted);font-size:12.5px}
+  .inspector ul li{margin:3px 0}
+  .inspector ul li b{color:var(--ink);font-weight:600;font-family:var(--mono);font-size:12px}
+  .pinned-note{font-family:var(--mono);font-size:10.5px;color:var(--amber);margin-top:10px;display:none}
+  .inspector.pinned .pinned-note{display:block}
+
+  .comp-list{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;
+  }
+  .comp-list h3{margin:0 0 8px;font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+  .comp-list ol{margin:0;padding:0;list-style:none}
+  .comp-list li{
+    font-size:13px;padding:6px 8px;border-radius:6px;cursor:pointer;display:flex;gap:8px;align-items:baseline;
+  }
+  .comp-list li:hover,.comp-list li.hot{background:var(--panel2);color:var(--amber)}
+  .comp-list li .q{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:26px}
+  .legend{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .legend h3{margin:0 0 8px;font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+  .legend .row{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 6px;border-radius:6px;cursor:pointer}
+  .legend .row:hover,.legend .row.hot{background:var(--panel2)}
+  .legend .sw{width:22px;height:4px;border-radius:2px;flex:none}
+
+  /* ---------- SVG: componentes e fios ---------- */
+  .board{fill:var(--board);stroke:var(--board-line);stroke-width:1.5;rx:8}
+  .board-blk{fill:url(#gBlk);stroke:#363a41;stroke-width:1.5}
+  .board-blu{fill:url(#gBlu);stroke:#3f68d8;stroke-width:1.5}
+  .silk{fill:var(--silk);font-family:var(--mono)}
+  .silk-dim{fill:#94a1af;font-family:var(--mono)}
+  .metal{fill:#39424e;stroke:#59636f;stroke-width:1}
+  .pin-sq{fill:#c9a227;stroke:#8a6d12;stroke-width:.8}
+  .screw{fill:#20262e;stroke:#59636f;stroke-width:1}
+  .screw-in{fill:#c9a227}
+  .wire{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;cursor:pointer;transition:opacity .15s,stroke-width .15s}
+  .wire-hit{fill:none;stroke:transparent;stroke-width:14;stroke-linecap:round;cursor:pointer}
+  .dot{stroke:none}
+  .comp{cursor:pointer;transition:opacity .15s}
+  svg.probing .comp{opacity:.22}
+  svg.probing .wire{opacity:.10}
+  svg.probing .dot{opacity:.10}
+  svg.probing .comp.active{opacity:1}
+  svg.probing .wire.active{opacity:1;stroke-width:4.5;filter:drop-shadow(0 0 6px currentColor)}
+  svg.probing .dot.active{opacity:1}
+  .comp.active .board,.comp.active .board-blk,.comp.active .board-blu{stroke:var(--amber);stroke-width:2}
+  .comp.active .halo{opacity:1}
+  .halo{fill:none;stroke:var(--amber);stroke-width:1.5;stroke-dasharray:5 4;opacity:0;transition:opacity .15s;rx:10}
+  .netlabel{font-family:var(--mono);font-size:10px}
+
+  /* ---------- seções de texto ---------- */
+  section.doc{margin-top:34px}
+  section.doc h2{
+    font-family:var(--mono);font-size:16px;color:var(--amber);
+    letter-spacing:.06em;border-bottom:1px solid var(--line);padding-bottom:8px;
+  }
+  section.doc h3{font-family:var(--mono);font-size:14px;color:var(--ink);margin:22px 0 6px}
+  section.doc p{max-width:78ch;color:#c8d1dc}
+  .conn-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+  .conn-table th{
+    text-align:left;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted);border-bottom:1px solid var(--line);padding:8px 10px;
+  }
+  .conn-table td{border-bottom:1px solid #1e2530;padding:7px 10px;vertical-align:top}
+  .conn-table td.mono{font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+  .conn-table tr:hover td{background:var(--panel)}
+  .chip{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:6px}
+  .warn{
+    border:1px solid #7a5516;background:#22160a;border-radius:10px;
+    padding:12px 16px;margin:14px 0;max-width:82ch;
+  }
+  .warn b{color:var(--amber)}
+  .flow{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0;font-family:var(--mono);font-size:12px}
+  .flow .step{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+  .flow .arr{color:var(--amber);align-self:center}
+  code{font-family:var(--mono);background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12.5px;color:#ffd58a}
+  @media (prefers-reduced-motion: reduce){
+    .wire,.comp,.halo{transition:none}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="eyebrow">Projeto · Automação de acesso</div>
+  <h1>Controle remoto de 3 portas — ESP32 + Relé + Eletroímãs 12V (MQTT)</h1>
+  <p>Esquema interativo da montagem. Passe o mouse (ou toque) em qualquer componente ou fio para
+     destacar a rede elétrica inteira e ler os detalhes no inspetor ao lado. Clique para fixar a seleção.</p>
+  <div class="tabs" role="tablist">
+    <button class="tab on" id="tab2d" role="tab" aria-selected="true">Esquema 2D</button>
+    <button class="tab" id="tab3d" role="tab" aria-selected="false">Montagem 3D</button>
+  </div>
+</header>
+
+<main>
+<div class="stage">
+  <div>
+    <div id="view2d" class="canvas-wrap">
+      <svg id="schematic" viewBox="0 0 1560 1000" xmlns="http://www.w3.org/2000/svg" aria-label="Esquema elétrico do controle de acesso">
+        <defs>
+          <linearGradient id="gBlk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#24272d"/><stop offset=".5" stop-color="#17191e"/><stop offset="1" stop-color="#0f1115"/></linearGradient>
+          <linearGradient id="gBlu" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d4cd0"/><stop offset=".55" stop-color="#173fb2"/><stop offset="1" stop-color="#122e88"/></linearGradient>
+          <linearGradient id="gShield" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e4eaf1"/><stop offset=".35" stop-color="#b0bbc8"/><stop offset=".65" stop-color="#8e9aa8"/><stop offset="1" stop-color="#bcc6d1"/></linearGradient>
+          <linearGradient id="gAlu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dde3ea"/><stop offset=".28" stop-color="#b6bfca"/><stop offset=".55" stop-color="#99a4b1"/><stop offset=".8" stop-color="#c6cdd7"/><stop offset="1" stop-color="#a9b2be"/></linearGradient>
+          <linearGradient id="gRelay" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3d72ea"/><stop offset=".5" stop-color="#2456cc"/><stop offset="1" stop-color="#193f9f"/></linearGradient>
+          <linearGradient id="gBrick" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#363b43"/><stop offset=".18" stop-color="#23272d"/><stop offset="1" stop-color="#14171c"/></linearGradient>
+          <linearGradient id="gTerm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2ea052"/><stop offset="1" stop-color="#14672f"/></linearGradient>
+          <linearGradient id="gWago" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2f4f7"/><stop offset="1" stop-color="#c8cfd7"/></linearGradient>
+          <radialGradient id="gToro" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#d0a95f"/><stop offset=".62" stop-color="#a97e35"/><stop offset="1" stop-color="#775622"/></radialGradient>
+          <radialGradient id="gCap" cx=".35" cy=".35" r=".85"><stop offset="0" stop-color="#3d434b"/><stop offset=".65" stop-color="#181b20"/><stop offset="1" stop-color="#0b0d11"/></radialGradient>
+        </defs>
+
+        <!-- ================= FIOS (redes) ================= -->
+        <g id="wires">
+          <!-- cabo da fonte até o plugue P4 -->
+          <path class="wire" data-net="12v" stroke="#4a5563" stroke-width="6" d="M220,125 H286"/>
+
+          <!-- +12V -->
+          <path class="wire" data-net="12v" stroke="var(--w12)" d="M410,110 H450"/>
+          <path class="wire" data-net="12v" stroke="var(--w12)" d="M480,103 V210 H100 V300"/>
+          <path class="wire" data-net="12v" stroke="var(--w12)" d="M620,78 H660 V35 H1210 V590 H1192"/>
+          <path class="wire" data-net="12v" stroke="var(--w12)" d="M1210,390 H1192"/>
+          <path class="wire" data-net="12v" stroke="var(--w12)" d="M1210,490 H1192"/>
+
+          <!-- GND -->
+          <path class="wire" data-net="gnd" stroke="var(--wgnd)" d="M410,145 H450"/>
+          <path class="wire" data-net="gnd" stroke="var(--wgnd)" d="M520,168 V230 H160 V300"/>
+          <path class="wire" data-net="gnd" stroke="var(--wgnd)" d="M620,145 H640 V960 H1316 V355 H1340"/>
+          <path class="wire" data-net="gnd" stroke="var(--wgnd)" d="M1316,515 H1340"/>
+          <path class="wire" data-net="gnd" stroke="var(--wgnd)" d="M1316,675 H1340"/>
+          <path class="wire" data-net="gnd" stroke="var(--wgnd)" d="M160,430 V880 H500 V740 H548"/>
+          <path class="wire" data-net="gnd" stroke="var(--wgnd)" d="M772,740 H812 V380 H888"/>
+
+          <!-- +5V -->
+          <path class="wire" data-net="5v" stroke="var(--w5)" d="M100,430 V860 H520 V770 H548"/>
+          <path class="wire" data-net="5v" stroke="var(--w5)" d="M520,860 H988 V782"/>
+
+          <!-- 3V3 -->
+          <path class="wire" data-net="3v3" stroke="var(--w33)" d="M772,770 H800 V580 H888"/>
+
+          <!-- sinais -->
+          <path class="wire" data-net="sig1" stroke="var(--ws1)" d="M772,350 H826 V420 H888"/>
+          <path class="wire" data-net="sig2" stroke="var(--ws2)" d="M772,380 H840 V460 H888"/>
+          <path class="wire" data-net="sig3" stroke="var(--ws3)" d="M772,470 H854 V500 H888"/>
+
+          <!-- travas (12V chaveado pelo contato NC) -->
+          <path class="wire" data-net="lock1" stroke="var(--wl1)" d="M1192,420 H1240 V320 H1340"/>
+          <path class="wire" data-net="lock2" stroke="var(--wl2)" d="M1192,520 H1256 V480 H1340"/>
+          <path class="wire" data-net="lock3" stroke="var(--wl3)" d="M1192,620 H1272 V640 H1340"/>
+        </g>
+
+        <!-- pontos de junção -->
+        <g id="dots">
+          <circle class="dot" data-net="12v" cx="1210" cy="390" r="4.5" fill="var(--w12)"/>
+          <circle class="dot" data-net="12v" cx="1210" cy="490" r="4.5" fill="var(--w12)"/>
+          <circle class="dot" data-net="gnd" cx="1316" cy="515" r="4.5" fill="var(--wgnd)"/>
+          <circle class="dot" data-net="gnd" cx="1316" cy="675" r="4.5" fill="var(--wgnd)"/>
+          <circle class="dot" data-net="5v"  cx="520"  cy="860" r="4.5" fill="var(--w5)"/>
+          <circle class="dot" data-net="lock1" cx="1318" cy="320" r="4.5" fill="var(--wl1)"/>
+          <circle class="dot" data-net="lock2" cx="1318" cy="480" r="4.5" fill="var(--wl2)"/>
+          <circle class="dot" data-net="lock3" cx="1318" cy="640" r="4.5" fill="var(--wl3)"/>
+          <circle class="dot" data-net="gnd" cx="1318" cy="355" r="4.5" fill="var(--wgnd)"/>
+          <circle class="dot" data-net="gnd" cx="1318" cy="515" r="4.5" fill="var(--wgnd)"/>
+          <circle class="dot" data-net="gnd" cx="1318" cy="675" r="4.5" fill="var(--wgnd)"/>
+        </g>
+
+        <!-- rótulos de rede -->
+        <g fill="var(--muted)">
+          <text class="netlabel" x="900" y="28" fill="var(--w12)">barramento +12V</text>
+          <text class="netlabel" x="900" y="952" fill="var(--wgnd)">barramento GND (0V)</text>
+          <text class="netlabel" x="300" y="852" fill="var(--w5)">+5V (saída do LM2596)</text>
+          <text class="netlabel" x="806" y="336" fill="var(--ws1)">GPIO23→IN1</text>
+          <text class="netlabel" x="820" y="406" fill="var(--ws2)">GPIO22→IN2</text>
+          <text class="netlabel" x="834" y="456" fill="var(--ws3)">GPIO21→IN3</text>
+        </g>
+
+        <!-- ================= FONTE 12V ================= -->
+        <g class="comp" data-id="fonte">
+          <rect class="halo" x="30" y="50" width="200" height="120" rx="10"/>
+          <rect x="40" y="60" width="180" height="100" rx="12" fill="url(#gBrick)" stroke="#3d434c" stroke-width="1.5"/>
+          <rect x="48" y="66" width="164" height="9" rx="4.5" fill="#333942" opacity=".8"/>
+          <circle cx="204" cy="70.5" r="3" fill="#57e389"/>
+          <rect x="54" y="84" width="132" height="62" rx="4" fill="#eceff2" stroke="#c3cad2"/>
+          <text x="62" y="102" font-size="13" font-weight="800" fill="#14181e" font-family="var(--mono)">12V ⎓ 2A</text>
+          <text x="62" y="118" font-size="7.5" fill="#4a525c" font-family="var(--mono)">ENTRADA 100–240V~ 50/60Hz</text>
+          <text x="62" y="130" font-size="7.5" fill="#4a525c" font-family="var(--mono)">SAÍDA 12V DC · 24W máx</text>
+          <text x="62" y="142" font-size="7.5" fill="#4a525c" font-family="var(--mono)">plugue P4 · 5,5×2,1mm</text>
+          <rect x="214" y="118" width="12" height="14" rx="5" fill="#0c0f13" stroke="#2c3138"/>
+          <rect x="286" y="112" width="16" height="26" rx="3" fill="#14181e" stroke="#3d434c"/>
+          <rect x="298" y="120" width="7" height="10" rx="2" fill="#aeb9c6"/>
+        </g>
+
+        <!-- ================= CONECTOR P4 FÊMEA ================= -->
+        <g class="comp" data-id="p4">
+          <rect class="halo" x="296" y="80" width="124" height="92" rx="10"/>
+          <rect x="304" y="88" width="104" height="76" rx="6" fill="url(#gBlk)" stroke="#3d434c" stroke-width="1.5"/>
+          <circle cx="322" cy="126" r="11" fill="#14181e" stroke="#7c8894" stroke-width="2"/>
+          <circle cx="322" cy="126" r="5.5" fill="#04060a"/>
+          <circle cx="322" cy="126" r="2.2" fill="#c9a227"/>
+          <rect x="374" y="92" width="32" height="68" rx="3" fill="url(#gTerm)" stroke="#0f5426"/>
+          <circle class="screw" cx="392" cy="110" r="7"/><line x1="388" y1="110" x2="396" y2="110" stroke="#8a929c" stroke-width="1.6"/><rect x="399" y="107" width="11" height="6" fill="#c9a227"/>
+          <circle class="screw" cx="392" cy="145" r="7"/><line x1="389" y1="142" x2="395" y2="148" stroke="#8a929c" stroke-width="1.6"/><rect x="399" y="142" width="11" height="6" fill="#c9a227"/>
+          <text class="silk" x="338" y="115" font-size="10">+ 12V</text>
+          <text class="silk" x="338" y="150" font-size="10">− GND</text>
+          <text class="silk-dim" x="304" y="180" font-size="10">P4 FÊMEA c/ BORNE</text>
+        </g>
+
+        <!-- ================= BORNES DE DISTRIBUIÇÃO ================= -->
+        <g class="comp" data-id="borne12">
+          <rect class="halo" x="442" y="47" width="186" height="64" rx="8"/>
+          <rect x="450" y="55" width="170" height="48" rx="6" fill="url(#gWago)" stroke="#9aa4af" stroke-width="1.2"/>
+<rect x="464" y="58" width="22" height="15" rx="3" fill="#ff7a1a" stroke="#c25708" stroke-width="1"/><line x1="469" y1="65.5" x2="481" y2="65.5" stroke="#e0661a" stroke-width="1.4"/><rect x="494" y="58" width="22" height="15" rx="3" fill="#ff7a1a" stroke="#c25708" stroke-width="1"/><line x1="499" y1="65.5" x2="511" y2="65.5" stroke="#e0661a" stroke-width="1.4"/><rect x="524" y="58" width="22" height="15" rx="3" fill="#ff7a1a" stroke="#c25708" stroke-width="1"/><line x1="529" y1="65.5" x2="541" y2="65.5" stroke="#e0661a" stroke-width="1.4"/><rect x="554" y="58" width="22" height="15" rx="3" fill="#ff7a1a" stroke="#c25708" stroke-width="1"/><line x1="559" y1="65.5" x2="571" y2="65.5" stroke="#e0661a" stroke-width="1.4"/><rect x="584" y="58" width="22" height="15" rx="3" fill="#ff7a1a" stroke="#c25708" stroke-width="1"/><line x1="589" y1="65.5" x2="601" y2="65.5" stroke="#e0661a" stroke-width="1.4"/>
+<circle cx="475" cy="82" r="5.5" fill="#22262c" stroke="#8d97a2" stroke-width="1.2"/><circle cx="505" cy="82" r="5.5" fill="#22262c" stroke="#8d97a2" stroke-width="1.2"/><circle cx="535" cy="82" r="5.5" fill="#22262c" stroke="#8d97a2" stroke-width="1.2"/><circle cx="565" cy="82" r="5.5" fill="#22262c" stroke="#8d97a2" stroke-width="1.2"/><circle cx="595" cy="82" r="5.5" fill="#22262c" stroke="#8d97a2" stroke-width="1.2"/>
+          <rect x="450" y="97" width="170" height="6" rx="3" fill="var(--w12)"/>
+          <text x="486" y="95" font-size="8" fill="#a33d2a" font-family="var(--mono)" font-weight="700">WAGO 221 · +12V</text>
+        </g>
+        <g class="comp" data-id="bornegnd">
+          <rect class="halo" x="442" y="112" width="186" height="64" rx="8"/>
+          <rect x="450" y="120" width="170" height="48" rx="6" fill="url(#gWago)" stroke="#9aa4af" stroke-width="1.2"/>
+<rect x="464" y="123" width="22" height="15" rx="3" fill="#ff7a1a" stroke="#c25708" stroke-width="1"/><line x1="469" y1="130.5" x2="481" y2="130.5" stroke="#e0661a" stroke-width="1.4"/><rect x="494" y="123" width="22" height="15" rx="3" fill="#ff7a1a" stroke="#c25708" stroke-width="1"/><line x1="499" y1="130.5" x2="511" y2="130.5" stroke="#e0661a" stroke-width="1.4"/><rect x="524" y="123" width="22" height="15" rx="3" fill="#ff7a1a" stroke="#c25708" stroke-width="1"/><line x1="529" y1="130.5" x2="541" y2="130.5" stroke="#e0661a" stroke-width="1.4"/><rect x="554" y="123" width="22" height="15" rx="3" fill="#ff7a1a" stroke="#c25708" stroke-width="1"/><line x1="559" y1="130.5" x2="571" y2="130.5" stroke="#e0661a" stroke-width="1.4"/><rect x="584" y="123" width="22" height="15" rx="3" fill="#ff7a1a" stroke="#c25708" stroke-width="1"/><line x1="589" y1="130.5" x2="601" y2="130.5" stroke="#e0661a" stroke-width="1.4"/>
+<circle cx="475" cy="147" r="5.5" fill="#22262c" stroke="#8d97a2" stroke-width="1.2"/><circle cx="505" cy="147" r="5.5" fill="#22262c" stroke="#8d97a2" stroke-width="1.2"/><circle cx="535" cy="147" r="5.5" fill="#22262c" stroke="#8d97a2" stroke-width="1.2"/><circle cx="565" cy="147" r="5.5" fill="#22262c" stroke="#8d97a2" stroke-width="1.2"/><circle cx="595" cy="147" r="5.5" fill="#22262c" stroke="#8d97a2" stroke-width="1.2"/>
+          <rect x="450" y="162" width="170" height="6" rx="3" fill="var(--wgnd)"/>
+          <text x="486" y="160" font-size="8" fill="#3d4650" font-family="var(--mono)" font-weight="700">WAGO 221 · GND</text>
+        </g>
+
+        <!-- ================= LM2596 ================= -->
+        <g class="comp" data-id="lm2596">
+          <rect class="halo" x="40" y="290" width="220" height="150" rx="10"/>
+          <rect class="board-blu" x="50" y="300" width="200" height="130" rx="7"/>
+          <circle class="screw" cx="100" cy="314" r="7"/><line x1="100" y1="300" x2="100" y2="307" stroke="#c9a227" stroke-width="3"/>
+          <circle class="screw" cx="160" cy="314" r="7"/><line x1="160" y1="300" x2="160" y2="307" stroke="#c9a227" stroke-width="3"/>
+          <circle class="screw" cx="100" cy="416" r="7"/><line x1="100" y1="423" x2="100" y2="430" stroke="#c9a227" stroke-width="3"/>
+          <circle class="screw" cx="160" cy="416" r="7"/><line x1="160" y1="423" x2="160" y2="430" stroke="#c9a227" stroke-width="3"/>
+          <text class="silk" x="82" y="336" font-size="9">IN+</text>
+          <text class="silk" x="144" y="336" font-size="9">IN−</text>
+          <text class="silk" x="78" y="404" font-size="9">OUT+</text>
+          <text class="silk" x="142" y="404" font-size="9">OUT−</text>
+          <circle cx="205" cy="368" r="21" fill="url(#gToro)" stroke="#5e441a" stroke-width="1.5"/>
+          <g stroke="#e4c98a" stroke-width="2.6" fill="none" opacity=".9">
+            <path d="M188,357 L200,350"/><path d="M185,366 L198,362"/><path d="M185,375 L198,376"/>
+            <path d="M189,384 L200,386"/><path d="M212,349 L222,356"/><path d="M219,383 L211,388"/>
+          </g>
+          <circle cx="205" cy="368" r="7.5" fill="#141313" stroke="#5e441a"/>
+          <rect x="106" y="346" width="44" height="8" rx="1.5" fill="#aeb9c6" stroke="#7c8894" stroke-width=".8"/>
+          <rect x="106" y="354" width="44" height="24" rx="2" fill="#0c0e12" stroke="#000"/>
+          <text x="110" y="369" font-size="7.5" fill="#cfd6dd" font-family="var(--mono)">LM2596S</text>
+          <text x="110" y="376" font-size="5.5" fill="#7c8894" font-family="var(--mono)">-ADJ</text>
+          <circle cx="70" cy="332" r="12" fill="url(#gCap)" stroke="#8e9aa8" stroke-width="2"/>
+          <path d="M65,327 L75,337 M75,327 L65,337" stroke="#39404a" stroke-width="1.4"/>
+          <circle cx="70" cy="400" r="12" fill="url(#gCap)" stroke="#8e9aa8" stroke-width="2"/>
+          <path d="M65,395 L75,405 M75,395 L65,405" stroke="#39404a" stroke-width="1.4"/>
+          <rect x="222" y="304" width="24" height="22" rx="3" fill="#2a6fdb" stroke="#6ea1f0"/>
+          <circle cx="234" cy="315" r="6" fill="#c9a227" stroke="#8a6d12" stroke-width="1.2"/>
+          <line x1="230.5" y1="311.5" x2="237.5" y2="318.5" stroke="#7c5f10" stroke-width="1.6"/>
+          <text class="silk" x="178" y="447" font-size="10">LM2596 · 12V→5V</text>
+          <text x="188" y="296" font-size="9" fill="var(--amber)" font-family="var(--mono)">⚠ ajustar p/ 5,0V</text>
+        </g>
+
+        <!-- ================= ESP32 ================= -->
+        <g class="comp" data-id="esp32">
+          <rect class="halo" x="550" y="290" width="220" height="536" rx="10"/>
+          <rect class="board-blk" x="560" y="300" width="200" height="516" rx="8"/>
+          <rect x="560" y="300" width="200" height="46" rx="8" fill="#0a0c10"/>
+          <path d="M582,314 h28 v9 h-28 m38,-9 h28 v9 h-28 m38,-9 h28 v9 h-28 M582,323 v8 h104 v-8" fill="none" stroke="#c9a227" stroke-width="2.2" opacity=".9"/>
+          <text x="586" y="341" font-size="7.5" fill="#5c646e" font-family="var(--mono)">ANTENA WI-FI 2.4GHz</text>
+          <rect x="596" y="356" width="128" height="148" rx="5" fill="url(#gShield)" stroke="#7c8894" stroke-width="1.2"/>
+          <rect x="596" y="356" width="128" height="30" rx="5" fill="#ffffff" opacity=".18"/>
+          <rect x="606" y="392" width="16" height="16" rx="2" fill="none" stroke="#4a525c" stroke-width="1.4"/>
+          <text x="608" y="404" font-size="8" fill="#4a525c" font-family="var(--mono)">◉</text>
+          <text x="606" y="428" font-size="11" font-weight="700" fill="#2e353e" font-family="var(--mono)">ESP32-WROOM-32</text>
+          <text x="606" y="443" font-size="7.5" fill="#5a6470" font-family="var(--mono)">Wi-Fi + BT · dual core</text>
+          <text x="606" y="456" font-size="6.5" fill="#6b7581" font-family="var(--mono)">FCC ID: 2AC7Z-ESPWROOM32</text>
+          <text class="silk" x="592" y="540" font-size="11" fill="#e8edf3">ESP32 NodeMCU</text>
+          <text x="592" y="556" font-size="9" fill="#94a1af" font-family="var(--mono)">DevKit V1 · 30 pinos</text>
+          <rect x="600" y="580" width="26" height="18" rx="2" fill="#0c0e12" stroke="#2c3138"/>
+          <text x="601" y="592" font-size="6" fill="#8d97a2" font-family="var(--mono)">AMS1117</text>
+          <rect x="640" y="582" width="9" height="6" rx="1" fill="#ff5148"/>
+          <circle cx="644.5" cy="585" r="6" fill="#ff5148" opacity=".28"/>
+          <rect x="660" y="580" width="12" height="8" rx="1" fill="#8b6d4f" stroke="#5e4a36"/>
+          <rect x="678" y="580" width="12" height="8" rx="1" fill="#8b6d4f" stroke="#5e4a36"/>
+          <rect x="572" y="782" width="24" height="16" rx="2" fill="url(#gShield)" stroke="#7c8894"/>
+          <circle cx="584" cy="790" r="4.5" fill="#22262c"/>
+          <text x="573" y="778" font-size="7" fill="#94a1af" font-family="var(--mono)">EN</text>
+          <rect x="724" y="782" width="24" height="16" rx="2" fill="url(#gShield)" stroke="#7c8894"/>
+          <circle cx="736" cy="790" r="4.5" fill="#22262c"/>
+          <text x="718" y="778" font-size="7" fill="#94a1af" font-family="var(--mono)">BOOT</text>
+          <rect x="628" y="798" width="64" height="20" rx="3" fill="url(#gShield)" stroke="#7c8894"/>
+          <rect x="640" y="804" width="40" height="8" rx="4" fill="#22262c"/>
+          <text x="636" y="794" font-size="7.5" fill="#94a1af" font-family="var(--mono)">micro-USB</text>
+          <g id="esp-pins"></g>
+        </g>
+
+        <!-- ================= MÓDULO RELÉ 4 CANAIS ================= -->
+        <g class="comp" data-id="rele">
+          <rect class="halo" x="890" y="320" width="300" height="470" rx="10"/>
+          <rect class="board-blu" x="900" y="330" width="280" height="450" rx="8"/>
+          <text class="silk" x="916" y="352" font-size="11">MÓDULO RELÉ · 4 CANAIS</text>
+          <text class="silk-dim" x="916" y="366" font-size="8">optoacoplado · acionamento em nível BAIXO</text>
+          <g id="rele-pins"></g>
+          <g id="rele-canais"></g>
+          <!-- header JD-VCC -->
+          <rect x="920" y="748" width="10" height="10" class="pin-sq"/>
+          <rect x="936" y="748" width="10" height="10" class="pin-sq"/>
+          <rect x="952" y="748" width="10" height="10" class="pin-sq"/>
+          <line x1="988" y1="782" x2="988" y2="758" stroke="var(--w5)" stroke-width="3"/>
+          <line x1="925" y1="758" x2="925" y2="770" stroke="var(--w5)" stroke-width="3"/>
+          <line x1="925" y1="770" x2="988" y2="770" stroke="var(--w5)" stroke-width="3"/>
+          <text class="silk-dim" x="916" y="744" font-size="8">JD-VCC · VCC · GND</text>
+          <text x="1000" y="762" font-size="9" fill="var(--amber)" font-family="var(--mono)">jumper REMOVIDO → 5V aqui</text>
+        </g>
+
+        <!-- ================= ELETROÍMÃS + DIODOS ================= -->
+        <g class="comp" data-id="d1">
+          <rect class="halo" x="1304" y="312" width="30" height="52" rx="6"/>
+          <line x1="1318" y1="320" x2="1318" y2="355" stroke="#9fa8b3" stroke-width="2"/>
+          <rect x="1312" y="328" width="12" height="20" rx="2.5" fill="#0d0f13" stroke="#2c3138" stroke-width="1"/>
+          <rect x="1312" y="330" width="12" height="3.5" fill="#d0d6dd"/>
+          <text class="silk-dim" x="1284" y="342" font-size="8" text-anchor="end">D1 1N4007</text>
+        </g>
+        <g class="comp" data-id="d2">
+          <rect class="halo" x="1304" y="472" width="30" height="52" rx="6"/>
+          <line x1="1318" y1="480" x2="1318" y2="515" stroke="#9fa8b3" stroke-width="2"/>
+          <rect x="1312" y="488" width="12" height="20" rx="2.5" fill="#0d0f13" stroke="#2c3138" stroke-width="1"/>
+          <rect x="1312" y="490" width="12" height="3.5" fill="#d0d6dd"/>
+          <text class="silk-dim" x="1284" y="502" font-size="8" text-anchor="end">D2 1N4007</text>
+        </g>
+        <g class="comp" data-id="d3">
+          <rect class="halo" x="1304" y="632" width="30" height="52" rx="6"/>
+          <line x1="1318" y1="640" x2="1318" y2="675" stroke="#9fa8b3" stroke-width="2"/>
+          <rect x="1312" y="648" width="12" height="20" rx="2.5" fill="#0d0f13" stroke="#2c3138" stroke-width="1"/>
+          <rect x="1312" y="650" width="12" height="3.5" fill="#d0d6dd"/>
+          <text class="silk-dim" x="1284" y="662" font-size="8" text-anchor="end">D3 1N4007</text>
+        </g>
+
+        <g class="comp" data-id="ima1">
+          <rect class="halo" x="1352" y="288" width="176" height="132" rx="10"/>
+          <text class="silk-dim" x="1360" y="296" font-size="10" fill="var(--amber)">PORTA 1</text>
+          <rect x="1360" y="300" width="160" height="80" rx="6" fill="url(#gAlu)" stroke="#7e8894" stroke-width="1.5"/>
+          <g stroke="#ffffff" stroke-width="1" opacity=".22">
+            <line x1="1364" y1="308" x2="1516" y2="308"/><line x1="1364" y1="360" x2="1516" y2="360"/><line x1="1364" y1="370" x2="1516" y2="370"/>
+          </g>
+          <rect x="1372" y="312" width="136" height="38" rx="3" fill="#14171c" stroke="#2c3138"/>
+          <circle cx="1499" cy="331" r="3" fill="#57e389"/>
+          <circle cx="1499" cy="331" r="6.5" fill="#57e389" opacity=".22"/>
+          <text class="silk" x="1382" y="330" font-size="9" fill="#c9d3df">ELETROÍMÃ 12V</text>
+          <text class="silk-dim" x="1382" y="343" font-size="8">força de retenção</text>
+          <circle class="screw" cx="1368" cy="320" r="6"/>
+          <circle class="screw" cx="1368" cy="355" r="6"/>
+          <text x="1382" y="372" font-size="10" font-weight="700" fill="#20262e" font-family="var(--mono)">+   −</text>
+          <rect x="1376" y="394" width="128" height="12" rx="2" fill="url(#gAlu)" stroke="#8e99a5"/>
+          <circle cx="1440" cy="400" r="3.4" fill="#565f6a" stroke="#3d454e"/>
+          <text class="silk-dim" x="1382" y="418" font-size="8">contra-placa (na porta)</text>
+        </g>
+        <g class="comp" data-id="ima2">
+          <rect class="halo" x="1352" y="448" width="176" height="132" rx="10"/>
+          <text class="silk-dim" x="1360" y="456" font-size="10" fill="var(--amber)">PORTA 2</text>
+          <rect x="1360" y="460" width="160" height="80" rx="6" fill="url(#gAlu)" stroke="#7e8894" stroke-width="1.5"/>
+          <g stroke="#ffffff" stroke-width="1" opacity=".22">
+            <line x1="1364" y1="468" x2="1516" y2="468"/><line x1="1364" y1="520" x2="1516" y2="520"/><line x1="1364" y1="530" x2="1516" y2="530"/>
+          </g>
+          <rect x="1372" y="472" width="136" height="38" rx="3" fill="#14171c" stroke="#2c3138"/>
+          <circle cx="1499" cy="491" r="3" fill="#57e389"/>
+          <circle cx="1499" cy="491" r="6.5" fill="#57e389" opacity=".22"/>
+          <text class="silk" x="1382" y="490" font-size="9" fill="#c9d3df">ELETROÍMÃ 12V</text>
+          <text class="silk-dim" x="1382" y="503" font-size="8">força de retenção</text>
+          <circle class="screw" cx="1368" cy="480" r="6"/>
+          <circle class="screw" cx="1368" cy="515" r="6"/>
+          <text x="1382" y="532" font-size="10" font-weight="700" fill="#20262e" font-family="var(--mono)">+   −</text>
+          <rect x="1376" y="554" width="128" height="12" rx="2" fill="url(#gAlu)" stroke="#8e99a5"/>
+          <circle cx="1440" cy="560" r="3.4" fill="#565f6a" stroke="#3d454e"/>
+          <text class="silk-dim" x="1382" y="578" font-size="8">contra-placa (na porta)</text>
+        </g>
+        <g class="comp" data-id="ima3">
+          <rect class="halo" x="1352" y="608" width="176" height="132" rx="10"/>
+          <text class="silk-dim" x="1360" y="616" font-size="10" fill="var(--amber)">PORTA 3</text>
+          <rect x="1360" y="620" width="160" height="80" rx="6" fill="url(#gAlu)" stroke="#7e8894" stroke-width="1.5"/>
+          <g stroke="#ffffff" stroke-width="1" opacity=".22">
+            <line x1="1364" y1="628" x2="1516" y2="628"/><line x1="1364" y1="680" x2="1516" y2="680"/><line x1="1364" y1="690" x2="1516" y2="690"/>
+          </g>
+          <rect x="1372" y="632" width="136" height="38" rx="3" fill="#14171c" stroke="#2c3138"/>
+          <circle cx="1499" cy="651" r="3" fill="#57e389"/>
+          <circle cx="1499" cy="651" r="6.5" fill="#57e389" opacity=".22"/>
+          <text class="silk" x="1382" y="650" font-size="9" fill="#c9d3df">ELETROÍMÃ 12V</text>
+          <text class="silk-dim" x="1382" y="663" font-size="8">força de retenção</text>
+          <circle class="screw" cx="1368" cy="640" r="6"/>
+          <circle class="screw" cx="1368" cy="675" r="6"/>
+          <text x="1382" y="692" font-size="10" font-weight="700" fill="#20262e" font-family="var(--mono)">+   −</text>
+          <rect x="1376" y="714" width="128" height="12" rx="2" fill="url(#gAlu)" stroke="#8e99a5"/>
+          <circle cx="1440" cy="720" r="3.4" fill="#565f6a" stroke="#3d454e"/>
+          <text class="silk-dim" x="1382" y="738" font-size="8">contra-placa (na porta)</text>
+        </g>
+      </svg>
+    </div>
+
+    <div id="view3d">
+      <div id="three-wrap">
+        <div id="hint3d">arraste para girar · scroll/pinça para zoom · passe o mouse nos componentes</div>
+        <div id="label3d"></div>
+      </div>
+    </div>
+  </div>
+
+  <aside>
+    <div class="inspector" id="inspector">
+      <div class="tag">Inspetor</div>
+      <h2 id="insp-title">Passe o mouse no circuito</h2>
+      <p class="desc" id="insp-desc">Cada componente e cada fio mostram aqui sua função e as conexões exatas, pino a pino.</p>
+      <ul id="insp-list"></ul>
+      <div class="pinned-note">seleção fixada — clique de novo (ou Esc) para soltar</div>
+    </div>
+    <div class="legend" id="legend">
+      <h3>Redes elétricas (fios)</h3>
+    </div>
+    <div class="comp-list" id="complist">
+      <h3>Componentes</h3>
+      <ol id="complist-ol"></ol>
+    </div>
+  </aside>
+</div>
+
+<!-- ================= COMO FUNCIONA ================= -->
+<section class="doc">
+  <h2>// Como o sistema funciona</h2>
+
+  <h3>1 · Energia</h3>
+  <p>A fonte chaveada entrega <b>12V DC</b> pelo plugue P4. No conector P4 fêmea, a energia é distribuída
+  em dois barramentos (bornes ou Wago): um de <b>+12V</b> e um de <b>GND</b>. Desses barramentos saem duas linhas:
+  uma vai direto para os contatos <code>COM</code> do módulo relé (a energia "bruta" que segura os ímãs) e outra
+  entra no <b>LM2596</b>, que abaixa 12V para <b>5V</b> e alimenta o ESP32 pelo pino <code>VIN</code> e as bobinas
+  do relé pelo pino <code>JD-VCC</code>.</p>
+
+  <h3>2 · Estado padrão: trancado sem gastar o relé</h3>
+  <p>Aqui está o detalhe mais importante da montagem: os eletroímãs são ligados no contato
+  <b>NC (normalmente fechado)</b> de cada canal, e não no NO. Com o relé em repouso (bobina desligada),
+  o contato NC fica fechado e o caminho <code>+12V → COM → NC → ímã → GND</code> está completo: a porta
+  fica trancada <b>sem o ESP32 gastar nenhum sinal e sem nenhuma bobina de relé energizada 24h por dia</b>.
+  A bobina só é acionada durante os ~3 segundos de abertura. Isso economiza energia, reduz aquecimento
+  e alonga a vida útil do módulo.</p>
+
+  <h3>3 · O comando MQTT</h3>
+  <div class="flow">
+    <span class="step">App / automação publica<br><code>portas/1/abrir</code></span><span class="arr">→</span>
+    <span class="step">Broker MQTT<br>(nuvem ou rede local)</span><span class="arr">→</span>
+    <span class="step">ESP32 assinado no tópico<br>recebe a mensagem via Wi-Fi</span><span class="arr">→</span>
+    <span class="step">GPIO23 vai a nível BAIXO<br>bobina do canal 1 liga</span><span class="arr">→</span>
+    <span class="step">Contato comuta NC→NO<br>ímã 1 perde os 12V</span><span class="arr">→</span>
+    <span class="step">Porta 1 destrava<br>por 3 segundos</span><span class="arr">→</span>
+    <span class="step">GPIO23 volta a ALTO<br>NC fecha, ímã religa, tranca</span>
+  </div>
+  <p>O módulo relé típico de 4 canais é <b>ativo em nível baixo</b>: o canal liga quando o pino
+  <code>IN</code> vai para 0V. Por isso, no firmware, a primeira coisa do <code>setup()</code> é colocar
+  GPIO23/22/21 em <b>nível ALTO</b> — assim nada pisca no boot. Esses três GPIOs foram escolhidos de propósito:
+  ficam na coluna direita da placa (do mesmo lado do 3V3 e do GND, encurtando os jumpers) e
+  <b>não são pinos de strapping</b> — diferente de GPIO0, 2, 5, 12 e 15, eles não interferem no boot
+  nem oscilam durante a inicialização.</p>
+
+  <h3>4 · O papel do diodo 1N4007</h3>
+  <p>O eletroímã é uma bobina. Quando o relé corta os 12V, a bobina tenta manter a corrente e gera um
+  pico de tensão reversa (centenas de volts) que arca nos contatos do relé e injeta ruído no circuito —
+  ruído suficiente para travar ou reiniciar um ESP32. O 1N4007 em paralelo com cada ímã dá caminho de
+  retorno para essa corrente. <b>Polaridade é crítica:</b> a faixa cinza (catodo) fica no terminal
+  <b>positivo</b> do ímã. Invertido, ele vira um curto-circuito da fonte.</p>
+
+  <h3>5 · Comportamento em queda de energia (fail-safe)</h3>
+  <p>Eletroímã trancado = eletroímã energizado. Se faltar luz, <b>as três portas destravam</b>.
+  Isso é uma característica desejável para rota de fuga/incêndio (por norma, ímã de porta é fail-safe),
+  mas significa que o sistema não protege durante um apagão. Se isso for um problema para o seu caso,
+  a solução é um no-break/bateria 12V na entrada — o circuito não muda.</p>
+
+  <h3>6 · Orçamento de corrente</h3>
+  <p>Cada eletroímã de 12V consome tipicamente 350–500&nbsp;mA. Três ímãs sempre ligados ≈ <b>1,0 a 1,5&nbsp;A</b>,
+  mais ESP32 + relés ≈ 0,2&nbsp;A referidos a 12V. A fonte de 2A fecha a conta, mas trabalhando perto do limite
+  térmico dela. Se puder, use <b>12V/3A</b> — custa quase o mesmo e roda folgada. E confira a força de retenção
+  do ímã escolhido: modelos de bancada de ~2,5&nbsp;kgf seguram portinhola de armário; para porta de ambiente
+  o usual é 60&nbsp;kgf ou mais.</p>
+</section>
+
+<!-- ================= TABELA DE CONEXÕES ================= -->
+<section class="doc">
+  <h2>// Mapa de conexões — pino a pino</h2>
+  <div class="warn"><b>Antes de tudo:</b> ligue a fonte só no LM2596 (sem ESP32 conectado), meça a saída com
+  multímetro e gire o trimpot azul até ler <b>5,0V</b>. Só então conecte o OUT+ ao VIN do ESP32.
+  E nunca alimente o ESP32 pelo USB e pelo VIN ao mesmo tempo.</div>
+  <table class="conn-table">
+    <thead><tr><th>#</th><th>De (componente · pino)</th><th>Para (componente · pino)</th><th>Fio</th><th>Função</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">01</td><td class="mono">Fonte 12V · plugue P4</td><td class="mono">P4 fêmea · jack</td><td><span class="chip" style="background:#4a5563"></span>cabo da fonte</td><td>Entrada de energia do sistema</td></tr>
+      <tr><td class="mono">02</td><td class="mono">P4 fêmea · borne (+)</td><td class="mono">Borne distribuição · +12V</td><td><span class="chip" style="background:var(--w12)"></span>vermelho</td><td>Barramento positivo</td></tr>
+      <tr><td class="mono">03</td><td class="mono">P4 fêmea · borne (−)</td><td class="mono">Borne distribuição · GND</td><td><span class="chip" style="background:var(--wgnd)"></span>preto</td><td>Barramento de retorno (0V)</td></tr>
+      <tr><td class="mono">04</td><td class="mono">Borne +12V</td><td class="mono">LM2596 · IN+</td><td><span class="chip" style="background:var(--w12)"></span>vermelho</td><td>Entrada do conversor</td></tr>
+      <tr><td class="mono">05</td><td class="mono">Borne GND</td><td class="mono">LM2596 · IN−</td><td><span class="chip" style="background:var(--wgnd)"></span>preto</td><td>Retorno do conversor</td></tr>
+      <tr><td class="mono">06</td><td class="mono">LM2596 · OUT+ (5,0V)</td><td class="mono">ESP32 · VIN</td><td><span class="chip" style="background:var(--w5)"></span>laranja</td><td>Alimentação do ESP32 (regulador interno gera 3V3)</td></tr>
+      <tr><td class="mono">07</td><td class="mono">LM2596 · OUT−</td><td class="mono">ESP32 · GND</td><td><span class="chip" style="background:var(--wgnd)"></span>preto</td><td>Referência comum da lógica</td></tr>
+      <tr><td class="mono">08</td><td class="mono">LM2596 · OUT+ (5,0V)</td><td class="mono">Relé · JD-VCC <i>(jumper removido)</i></td><td><span class="chip" style="background:var(--w5)"></span>laranja</td><td>Alimenta as bobinas dos relés (são de 5V)</td></tr>
+      <tr><td class="mono">09</td><td class="mono">ESP32 · 3V3</td><td class="mono">Relé · VCC</td><td><span class="chip" style="background:var(--w33)"></span>roxo</td><td>Alimenta o lado lógico/optoacopladores em 3,3V</td></tr>
+      <tr><td class="mono">10</td><td class="mono">ESP32 · GND</td><td class="mono">Relé · GND</td><td><span class="chip" style="background:var(--wgnd)"></span>preto</td><td>Referência dos sinais IN</td></tr>
+      <tr><td class="mono">11</td><td class="mono">ESP32 · GPIO23</td><td class="mono">Relé · IN1</td><td><span class="chip" style="background:var(--ws1)"></span>amarelo</td><td>Comando da Porta 1 (ativo em nível baixo)</td></tr>
+      <tr><td class="mono">12</td><td class="mono">ESP32 · GPIO22</td><td class="mono">Relé · IN2</td><td><span class="chip" style="background:var(--ws2)"></span>verde</td><td>Comando da Porta 2</td></tr>
+      <tr><td class="mono">13</td><td class="mono">ESP32 · GPIO21</td><td class="mono">Relé · IN3</td><td><span class="chip" style="background:var(--ws3)"></span>azul</td><td>Comando da Porta 3 (IN4 fica livre)</td></tr>
+      <tr><td class="mono">14</td><td class="mono">Borne +12V</td><td class="mono">Relé · COM1, COM2, COM3</td><td><span class="chip" style="background:var(--w12)"></span>vermelho ×3</td><td>Energia que passa pelos contatos</td></tr>
+      <tr><td class="mono">15</td><td class="mono">Relé · NC1</td><td class="mono">Eletroímã 1 · (+)</td><td><span class="chip" style="background:var(--wl1)"></span>cabo paralelo 0,75mm²</td><td>Trava da Porta 1 (fechado em repouso)</td></tr>
+      <tr><td class="mono">16</td><td class="mono">Relé · NC2</td><td class="mono">Eletroímã 2 · (+)</td><td><span class="chip" style="background:var(--wl2)"></span>cabo paralelo 0,75mm²</td><td>Trava da Porta 2</td></tr>
+      <tr><td class="mono">17</td><td class="mono">Relé · NC3</td><td class="mono">Eletroímã 3 · (+)</td><td><span class="chip" style="background:var(--wl3)"></span>cabo paralelo 0,75mm²</td><td>Trava da Porta 3</td></tr>
+      <tr><td class="mono">18</td><td class="mono">Eletroímãs 1–3 · (−)</td><td class="mono">Borne GND</td><td><span class="chip" style="background:var(--wgnd)"></span>cabo paralelo 0,75mm²</td><td>Retorno da corrente dos ímãs</td></tr>
+      <tr><td class="mono">19</td><td class="mono">Diodos D1–D3 (1N4007)</td><td class="mono">Em paralelo com cada ímã</td><td><span class="chip" style="background:#d0d6dd"></span>—</td><td><b>Faixa (catodo) no terminal +</b> · absorve o pico da bobina</td></tr>
+    </tbody>
+  </table>
+  <div class="warn"><b>JD-VCC, explicado:</b> nesses módulos, o pino VCC alimenta só o lado do LED/optoacoplador
+  (aceita os 3,3V do ESP32 numa boa), mas as <b>bobinas</b> dos relés são de 5V e bebem do pino <b>JD-VCC</b>.
+  De fábrica vem um jumper unindo VCC↔JD-VCC. Remova o jumper e leve 5V do LM2596 direto ao JD-VCC:
+  as bobinas ficam fortes e o ESP32 fica isolado do chaveamento. Se o seu módulo específico não tiver
+  esse header, alimente o VCC com os 5V do LM2596 — os INs continuam aceitando 3,3V.</div>
+</section>
+</main>
+
+<script>
+/* ============================================================
+   DADOS — componentes, redes e pinagem
+============================================================ */
+const NETS = {
+  '12v' : {name:'+12V (potência)',        color:'var(--w12)',  hex:0xff5c5c, desc:'Sai da fonte, energiza o LM2596 e os contatos COM dos canais 1–3 do relé. É a corrente que segura os ímãs.'},
+  'gnd' : {name:'GND · 0V comum',         color:'var(--wgnd)', hex:0x93a0b1, desc:'Retorno único de todo o sistema: fonte, LM2596, ESP32, módulo relé e os três eletroímãs compartilham o mesmo 0V.'},
+  '5v'  : {name:'+5V (saída do LM2596)',  color:'var(--w5)',   hex:0xffa94d, desc:'Ajustada no trimpot para 5,0V. Alimenta o VIN do ESP32 e o JD-VCC do relé (bobinas de 5V).'},
+  '3v3' : {name:'3V3 (lógica)',           color:'var(--w33)',  hex:0xc084fc, desc:'Do regulador interno do ESP32 para o pino VCC do módulo relé — alimenta só o lado dos optoacopladores.'},
+  'sig1': {name:'Sinal · Porta 1',        color:'var(--ws1)',  hex:0xffd43b, desc:'GPIO23 → IN1. Ativo em nível BAIXO: 0V liga a bobina do canal 1 e destrava a porta por ~3s.'},
+  'sig2': {name:'Sinal · Porta 2',        color:'var(--ws2)',  hex:0x69db7c, desc:'GPIO22 → IN2. Ativo em nível BAIXO: 0V liga a bobina do canal 2.'},
+  'sig3': {name:'Sinal · Porta 3',        color:'var(--ws3)',  hex:0x4dd4f7, desc:'GPIO21 → IN3. Ativo em nível BAIXO: 0V liga a bobina do canal 3. O IN4 fica de reserva.'},
+  'lock1':{name:'Trava 1 · 12V chaveado', color:'var(--wl1)',  hex:0xff8fa3, desc:'COM1→NC1→ímã 1. Em repouso o NC está fechado e o ímã fica energizado (porta trancada). O relé interrompe esse fio por 3s para abrir.'},
+  'lock2':{name:'Trava 2 · 12V chaveado', color:'var(--wl2)',  hex:0xf0abfc, desc:'COM2→NC2→ímã 2. Fechado em repouso; interrompido durante a abertura.'},
+  'lock3':{name:'Trava 3 · 12V chaveado', color:'var(--wl3)',  hex:0xffc078, desc:'COM3→NC3→ímã 3. Fechado em repouso; interrompido durante a abertura.'}
+};
+
+const COMPS = {
+  fonte:   {num:'01', name:'Fonte chaveada 12V · 2A', nets:['12v','gnd'],
+    desc:'Converte a rede AC (127/220V) em 12V DC. Alimenta tudo: ímãs, relés e — via LM2596 — o ESP32.',
+    conns:['<b>Saída P4</b> → conector P4 fêmea','Consumo em regime: ~1,2–1,7A (3 ímãs + lógica). 2A fecha; 3A roda folgada.']},
+  p4:      {num:'02', name:'Conector P4 fêmea com borne', nets:['12v','gnd'],
+    desc:'Recebe o plugue da fonte e converte em dois parafusos (+ e −), de onde a fiação parte com firmeza.',
+    conns:['<b>(+)</b> → borne de distribuição +12V','<b>(−)</b> → borne de distribuição GND','Confira a polaridade: no P4 padrão o pino central é o positivo.']},
+  borne12: {num:'03', name:'Borne / Wago · barramento +12V', nets:['12v'],
+    desc:'Ponto único de distribuição do positivo: um fio entra, quatro saem. Evita emendas soltas.',
+    conns:['← P4 fêmea (+)','→ LM2596 · IN+','→ Relé · COM1','→ Relé · COM2','→ Relé · COM3']},
+  bornegnd:{num:'04', name:'Borne / Wago · barramento GND', nets:['gnd'],
+    desc:'Ponto único do retorno (0V). Todos os negativos do sistema se encontram aqui.',
+    conns:['← P4 fêmea (−)','→ LM2596 · IN−','→ Eletroímã 1 (−)','→ Eletroímã 2 (−)','→ Eletroímã 3 (−)']},
+  lm2596:  {num:'05', name:'Conversor step-down LM2596', nets:['12v','gnd','5v'],
+    desc:'Abaixa os 12V da fonte para 5,0V. Ajuste o trimpot azul COM MULTÍMETRO antes de conectar o ESP32.',
+    conns:['<b>IN+</b> ← borne +12V','<b>IN−</b> ← borne GND','<b>OUT+ (5,0V)</b> → ESP32 · VIN &nbsp;e&nbsp; Relé · JD-VCC','<b>OUT−</b> → ESP32 · GND']},
+  esp32:   {num:'06', name:'ESP32 NodeMCU (ESP-WROOM-32, 30 pinos)', nets:['5v','gnd','3v3','sig1','sig2','sig3'],
+    desc:'O cérebro: conecta no Wi-Fi, assina os tópicos MQTT e comanda os 3 canais do relé. GPIO 23/22/21 escolhidos por não serem pinos de strapping (não piscam no boot) e por ficarem do mesmo lado que 3V3 e GND.',
+    conns:['<b>VIN</b> ← 5V do LM2596','<b>GND</b> ↔ LM2596 OUT− e Relé GND','<b>3V3</b> → Relé · VCC','<b>GPIO23</b> → Relé · IN1 (Porta 1)','<b>GPIO22</b> → Relé · IN2 (Porta 2)','<b>GPIO21</b> → Relé · IN3 (Porta 3)']},
+  rele:    {num:'07', name:'Módulo relé 4 canais (optoacoplado)', nets:['sig1','sig2','sig3','3v3','5v','gnd','12v','lock1','lock2','lock3'],
+    desc:'A ponte entre a lógica (3,3V) e a potência (12V). Ativo em nível baixo. Os ímãs vão no contato NC: trancado por padrão sem gastar bobina.',
+    conns:['<b>VCC</b> ← ESP32 3V3 · <b>GND</b> ← ESP32 GND','<b>JD-VCC</b> ← 5V do LM2596 (jumper removido)','<b>IN1/IN2/IN3</b> ← GPIO23/22/21','<b>COM1–3</b> ← barramento +12V','<b>NC1–3</b> → eletroímãs 1–3 (+)','<b>NO</b> e canal 4: sem uso (reserva)']},
+  ima1:    {num:'08', name:'Eletroímã 12V · Porta 1', nets:['lock1','gnd'],
+    desc:'Trava magnética: energizada = porta presa na contra-placa. Sem energia, solta. Fail-safe por natureza.',
+    conns:['<b>(+)</b> ← Relé · NC1 (cabo paralelo 0,75mm²)','<b>(−)</b> → borne GND','<b>D1</b> em paralelo, faixa no (+)','Contra-placa parafusada na folha da porta, ímã no batente.']},
+  ima2:    {num:'09', name:'Eletroímã 12V · Porta 2', nets:['lock2','gnd'],
+    desc:'Trava magnética da Porta 2 — mesmo esquema da Porta 1, no canal 2 do relé.',
+    conns:['<b>(+)</b> ← Relé · NC2','<b>(−)</b> → borne GND','<b>D2</b> em paralelo, faixa no (+)']},
+  ima3:    {num:'10', name:'Eletroímã 12V · Porta 3', nets:['lock3','gnd'],
+    desc:'Trava magnética da Porta 3 — canal 3 do relé.',
+    conns:['<b>(+)</b> ← Relé · NC3','<b>(−)</b> → borne GND','<b>D3</b> em paralelo, faixa no (+)']},
+  d1:      {num:'11', name:'Diodo flyback D1 · 1N4007', nets:['lock1','gnd'],
+    desc:'Absorve o pico de tensão reversa da bobina do ímã 1 quando o relé corta os 12V. Protege contatos e o ESP32 contra ruído.',
+    conns:['<b>Catodo (faixa)</b> → terminal (+) do ímã 1','<b>Anodo</b> → terminal (−) do ímã 1','⚠ Invertido = curto-circuito da fonte.']},
+  d2:      {num:'12', name:'Diodo flyback D2 · 1N4007', nets:['lock2','gnd'],
+    desc:'Proteção da bobina do ímã 2 — idêntico ao D1.',
+    conns:['<b>Catodo (faixa)</b> → (+) do ímã 2','<b>Anodo</b> → (−) do ímã 2']},
+  d3:      {num:'13', name:'Diodo flyback D3 · 1N4007', nets:['lock3','gnd'],
+    desc:'Proteção da bobina do ímã 3 — idêntico ao D1.',
+    conns:['<b>Catodo (faixa)</b> → (+) do ímã 3','<b>Anodo</b> → (−) do ímã 3']},
+  cabos:   {num:'14', name:'Fiação: jumpers + cabo paralelo', nets:[], virtual:true,
+    desc:'Jumpers fêmea-fêmea para os sinais ESP32↔relé; cabo paralelo 0,75mm² para os trechos até as portas (aguenta a corrente e a distância com folga).',
+    conns:['Sinais e alimentação lógica: jumpers','Trechos relé→ímã e ímã→GND: cabo paralelo','Emendas: Wago ou borne — nada de fita isolante solta.']},
+  caixa:   {num:'15', name:'Caixa de passagem (invólucro)', nets:[], virtual:true,
+    desc:'Abriga fonte de sinal de poeira, dedos e puxões: ESP32, relé, LM2596 e bornes ficam dentro; só o cabo paralelo sai para as portas.',
+    conns:['Fixe as placas com parafusos/espaçadores, não soltas.','Deixe folga de ventilação — a fonte e o LM2596 esquentam.']}
+};
+
+/* ============================================================
+   GERAÇÃO DOS PINOS (ESP32 e Relé) no SVG
+============================================================ */
+const SVGNS='http://www.w3.org/2000/svg';
+function el(tag,attrs,parent){const e=document.createElementNS(SVGNS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+function netColor(net){return net?NETS[net].color:'#c9a227';}
+
+const ESP_LEFT =[{n:'EN'},{n:'VP'},{n:'VN'},{n:'D34'},{n:'D35'},{n:'D32'},{n:'D33'},{n:'D25'},{n:'D26'},{n:'D27'},{n:'D14'},{n:'D12'},{n:'D13'},{n:'GND',net:'gnd'},{n:'VIN',net:'5v'}];
+const ESP_RIGHT=[{n:'D23',net:'sig1'},{n:'D22',net:'sig2'},{n:'TX0'},{n:'RX0'},{n:'D21',net:'sig3'},{n:'D19'},{n:'D18'},{n:'D5'},{n:'TX2'},{n:'RX2'},{n:'D4'},{n:'D2'},{n:'D15'},{n:'GND',net:'gnd'},{n:'3V3',net:'3v3'}];
+
+(function drawEspPins(){
+  const g=document.getElementById('esp-pins');
+  ESP_LEFT.forEach((p,i)=>{
+    const y=350+i*30;
+    el('line',{x1:552,y1:y,x2:560,y2:y,stroke:'#8a6d12','stroke-width':2},g);
+    el('rect',{x:544,y:y-4.5,width:9,height:9,class:'pin-sq',stroke:p.net?netColor(p.net):'#8a6d12','stroke-width':p.net?2:0.8},g);
+    el('text',{x:566,y:y+3.5,'font-size':9,class:'silk-dim',fill:p.net?netColor(p.net):'#94a1af','font-weight':p.net?'700':'400'},g).textContent=p.n;
+  });
+  ESP_RIGHT.forEach((p,i)=>{
+    const y=350+i*30;
+    el('line',{x1:760,y1:y,x2:768,y2:y,stroke:'#8a6d12','stroke-width':2},g);
+    el('rect',{x:767,y:y-4.5,width:9,height:9,class:'pin-sq',stroke:p.net?netColor(p.net):'#8a6d12','stroke-width':p.net?2:0.8},g);
+    el('text',{x:754,y:y+3.5,'font-size':9,class:'silk-dim','text-anchor':'end',fill:p.net?netColor(p.net):'#94a1af','font-weight':p.net?'700':'400'},g).textContent=p.n;
+  });
+})();
+
+const RELE_HDR=[{n:'GND',net:'gnd',y:380},{n:'IN1',net:'sig1',y:420},{n:'IN2',net:'sig2',y:460},{n:'IN3',net:'sig3',y:500},{n:'IN4',y:540},{n:'VCC',net:'3v3',y:580}];
+(function drawRelePins(){
+  const g=document.getElementById('rele-pins');
+  RELE_HDR.forEach(p=>{
+    el('line',{x1:888,y1:p.y,x2:900,y2:p.y,stroke:'#8a6d12','stroke-width':2},g);
+    el('rect',{x:884,y:p.y-4.5,width:9,height:9,class:'pin-sq',stroke:p.net?netColor(p.net):'#8a6d12','stroke-width':p.net?2:0.8},g);
+    el('text',{x:908,y:p.y+3.5,'font-size':9,class:'silk-dim',fill:p.net?netColor(p.net):'#94a1af','font-weight':p.net?'700':'400'},g).textContent=p.n;
+  });
+  const ch=document.getElementById('rele-canais');
+  const tops=[352,452,552,652];
+  tops.forEach((top,idx)=>{
+    const k=idx+1, used=k<=3;
+    const grp=el('g',{opacity:used?1:0.45},ch);
+    el('rect',{x:955,y:top,width:100,height:76,rx:3,fill:'url(#gRelay)',stroke:'#6d95f0','stroke-width':1.2},grp);
+    el('rect',{x:955,y:top,width:100,height:14,rx:3,fill:'#ffffff',opacity:.14},grp);
+    el('text',{x:963,y:top+24,'font-size':10,fill:'#ffffff','font-weight':700,'font-family':'var(--mono)'},grp).textContent='SONGLE';
+    el('text',{x:963,y:top+37,'font-size':7.5,fill:'#cdd9f5','font-family':'var(--mono)'},grp).textContent='SRD-05VDC-SL-C';
+    el('text',{x:963,y:top+49,'font-size':6.5,fill:'#9fb3e0','font-family':'var(--mono)'},grp).textContent='10A 250VAC · 10A 30VDC';
+    el('text',{x:963,y:top+66,'font-size':8.5,fill:used?'var(--amber)':'#9fb3e0','font-family':'var(--mono)','font-weight':700},grp).textContent=used?('RL'+k+' · PORTA '+k):'RL4 · reserva';
+    el('rect',{x:928,y:top+14,width:18,height:11,rx:1,fill:'#0c0e12',stroke:'#000'},grp);
+    el('text',{x:929.5,y:top+22,'font-size':5.5,fill:'#8d97a2','font-family':'var(--mono)'},grp).textContent='817C';
+    el('rect',{x:930,y:top+38,width:8,height:5,rx:1,fill:used?'#ff5148':'#5a2a27'},grp);
+    if(used)el('circle',{cx:934,cy:top+40.5,r:6,fill:'#ff5148',opacity:.25},grp);
+    el('rect',{x:1120,y:top-2,width:52,height:80,rx:3,fill:'url(#gTerm)',stroke:'#0f5426','stroke-width':1.2},grp);
+    const names=['NO','COM','NC'];
+    names.forEach((nm,j)=>{
+      const y=top+8+j*30;
+      el('circle',{cx:1146,cy:y,r:7,class:'screw'},grp);
+      el('circle',{cx:1146,cy:y,r:2.5,fill:'#c9a227'},grp);
+      el('line',{x1:1172,y1:y,x2:1192,y2:y,stroke:'#8a6d12','stroke-width':2.5},grp);
+      el('text',{x:1112,y:y+3,'font-size':8,'text-anchor':'end',class:'silk',fill:(used&&(nm==='COM'||nm==='NC'))?'#ffd58a':'#94a1af'},grp).textContent=nm;
+    });
+  });
+})();
+
+/* fios: cria áreas de clique mais largas (gêmeas invisíveis) */
+(function makeHits(){
+  const wiresG=document.getElementById('wires');
+  const hits=el('g',{id:'wire-hits'});
+  wiresG.parentNode.insertBefore(hits,wiresG.nextSibling);
+  wiresG.querySelectorAll('path.wire').forEach(p=>{
+    const h=el('path',{d:p.getAttribute('d'),class:'wire-hit','data-net':p.dataset.net},hits);
+  });
+})();
+
+/* ============================================================
+   INTERAÇÃO — inspetor, destaque de rede, lista e legenda
+============================================================ */
+const svg=document.getElementById('schematic');
+const insp={box:document.getElementById('inspector'),t:document.getElementById('insp-title'),d:document.getElementById('insp-desc'),l:document.getElementById('insp-list')};
+let pinned=null;
+
+function clearActive(){
+  svg.classList.remove('probing');
+  svg.querySelectorAll('.active').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('#complist-ol li.hot,#legend .row.hot').forEach(e=>e.classList.remove('hot'));
+}
+function activateNet(net){
+  svg.querySelectorAll('.wire[data-net="'+net+'"],.dot[data-net="'+net+'"]').forEach(e=>e.classList.add('active'));
+  const row=document.querySelector('#legend .row[data-net="'+net+'"]');
+  if(row)row.classList.add('hot');
+}
+function showComp(id){
+  const c=COMPS[id]; if(!c)return;
+  clearActive();
+  insp.t.textContent=c.num+' · '+c.name;
+  insp.d.innerHTML=c.desc;
+  insp.l.innerHTML=c.conns.map(x=>'<li>'+x+'</li>').join('');
+  const li=document.querySelector('#complist-ol li[data-id="'+id+'"]');
+  if(li)li.classList.add('hot');
+  if(c.virtual)return;
+  svg.classList.add('probing');
+  const g=svg.querySelector('.comp[data-id="'+id+'"]');
+  if(g)g.classList.add('active');
+  c.nets.forEach(activateNet);
+}
+function showNet(net){
+  const n=NETS[net]; if(!n)return;
+  clearActive();
+  svg.classList.add('probing');
+  activateNet(net);
+  for(const id in COMPS){
+    if(COMPS[id].nets.includes(net)){
+      const g=svg.querySelector('.comp[data-id="'+id+'"]');
+      if(g)g.classList.add('active');
+    }
+  }
+  insp.t.textContent=n.name;
+  insp.d.innerHTML=n.desc;
+  insp.l.innerHTML='';
+}
+function resetInspector(){
+  clearActive();
+  insp.t.textContent='Passe o mouse no circuito';
+  insp.d.innerHTML='Cada componente e cada fio mostram aqui sua função e as conexões exatas, pino a pino.';
+  insp.l.innerHTML='';
+}
+function setPinned(p){
+  pinned=p;
+  insp.box.classList.toggle('pinned',!!p);
+}
+
+svg.addEventListener('pointerover',e=>{
+  if(pinned)return;
+  const comp=e.target.closest('.comp');
+  if(comp){showComp(comp.dataset.id);return;}
+  const w=e.target.closest('[data-net]');
+  if(w){showNet(w.dataset.net);}
+});
+svg.addEventListener('pointerout',e=>{
+  if(pinned)return;
+  if(!e.relatedTarget||!svg.contains(e.relatedTarget))resetInspector();
+});
+svg.addEventListener('click',e=>{
+  const comp=e.target.closest('.comp');
+  const w=comp?null:e.target.closest('[data-net]');
+  if(comp){
+    if(pinned&&pinned.k==='c'&&pinned.id===comp.dataset.id){setPinned(null);resetInspector();return;}
+    setPinned({k:'c',id:comp.dataset.id});showComp(comp.dataset.id);
+  }else if(w){
+    if(pinned&&pinned.k==='n'&&pinned.id===w.dataset.net){setPinned(null);resetInspector();return;}
+    setPinned({k:'n',id:w.dataset.net});showNet(w.dataset.net);
+  }else{setPinned(null);resetInspector();}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){setPinned(null);resetInspector();}});
+
+/* lista de componentes */
+(function buildList(){
+  const ol=document.getElementById('complist-ol');
+  for(const id in COMPS){
+    const c=COMPS[id];
+    const li=document.createElement('li');
+    li.dataset.id=id;
+    li.innerHTML='<span class="q">'+c.num+'</span><span>'+c.name+'</span>';
+    li.addEventListener('pointerenter',()=>{if(!pinned)showComp(id);});
+    li.addEventListener('pointerleave',()=>{if(!pinned)resetInspector();});
+    li.addEventListener('click',()=>{setPinned({k:'c',id});showComp(id);});
+    ol.appendChild(li);
+  }
+})();
+
+/* legenda de redes */
+(function buildLegend(){
+  const box=document.getElementById('legend');
+  for(const net in NETS){
+    const r=document.createElement('div');
+    r.className='row';r.dataset.net=net;
+    r.innerHTML='<span class="sw" style="background:'+NETS[net].color+'"></span><span>'+NETS[net].name+'</span>';
+    r.addEventListener('pointerenter',()=>{if(!pinned)showNet(net);});
+    r.addEventListener('pointerleave',()=>{if(!pinned)resetInspector();});
+    r.addEventListener('click',()=>{setPinned({k:'n',id:net});showNet(net);});
+    box.appendChild(r);
+  }
+})();
+
+/* ============================================================
+   ABAS 2D / 3D
+============================================================ */
+const v2=document.getElementById('view2d'),v3=document.getElementById('view3d');
+const t2=document.getElementById('tab2d'),t3=document.getElementById('tab3d');
+let three=null;
+function selectTab(is3d){
+  v2.style.display=is3d?'none':'block';
+  v3.style.display=is3d?'block':'none';
+  t2.classList.toggle('on',!is3d);t3.classList.toggle('on',is3d);
+  t2.setAttribute('aria-selected',String(!is3d));t3.setAttribute('aria-selected',String(is3d));
+  if(is3d&&!three)load3D();
+  if(three)three.onShow(is3d);
+}
+t2.addEventListener('click',()=>selectTab(false));
+t3.addEventListener('click',()=>selectTab(true));
+
+function load3D(){
+  three={onShow(){}};
+  const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+  s.onload=()=>{three=init3D();three.onShow(true);};
+  s.onerror=()=>{document.getElementById('hint3d').textContent='não consegui carregar o Three.js (sem internet?) — a aba 2D segue funcionando';};
+  document.head.appendChild(s);
+}
+
+/* ============================================================
+   CENA 3D — montagem física simplificada
+============================================================ */
+function init3D(){
+  const wrap=document.getElementById('three-wrap');
+  const labelEl=document.getElementById('label3d');
+  const renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  renderer.setSize(wrap.clientWidth,wrap.clientHeight);
+  wrap.appendChild(renderer.domElement);
+
+  const scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x0a0d12);
+  scene.fog=new THREE.Fog(0x0a0d12,90,220);
+
+  const camera=new THREE.PerspectiveCamera(45,wrap.clientWidth/wrap.clientHeight,0.1,500);
+
+  scene.add(new THREE.HemisphereLight(0xbfd4ff,0x1a1410,0.85));
+  const sun=new THREE.DirectionalLight(0xfff2dd,0.9);
+  sun.position.set(40,60,30);scene.add(sun);
+  const fill=new THREE.DirectionalLight(0x88aaff,0.25);
+  fill.position.set(-40,30,-30);scene.add(fill);
+
+  const pickables=[];
+  function mat(color,opts){return new THREE.MeshStandardMaterial(Object.assign({color:color,roughness:.7,metalness:.15},opts||{}));}
+  function box(w,h,d,color,x,y,z,label,opts){
+    const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color,opts));
+    m.position.set(x,y,z);
+    if(label){m.userData.label=label;pickables.push(m);}
+    scene.add(m);return m;
+  }
+  function cyl(r,h,color,x,y,z,label){
+    const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,24),mat(color,{metalness:.5,roughness:.4}));
+    m.position.set(x,y,z);
+    if(label){m.userData.label=label;pickables.push(m);}
+    scene.add(m);return m;
+  }
+  function wire(points,hex,label){
+    const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(p[0],p[1],p[2])));
+    const geo=new THREE.TubeGeometry(curve,40,0.16,8,false);
+    const m=new THREE.Mesh(geo,mat(hex,{roughness:.5}));
+    m.userData.label=label;pickables.push(m);scene.add(m);return m;
+  }
+
+  /* chão */
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(240,160),mat(0x10141b,{roughness:1,metalness:0}));
+  ground.rotation.x=-Math.PI/2;scene.add(ground);
+  const grid=new THREE.GridHelper(160,32,0x1e2632,0x161d27);
+  grid.position.y=0.02;scene.add(grid);
+
+  /* caixa de passagem */
+  box(36,1.5,24,0x262c34,-12,0.75,0,'Caixa de passagem (base)');
+  const wallM={transparent:true,opacity:0.28};
+  box(36,6,0.8,0x3a4350,-12,4.5,-11.6,'Caixa de passagem (parede)',wallM);
+  box(36,6,0.8,0x3a4350,-12,4.5, 11.6,'Caixa de passagem (parede)',wallM);
+  box(0.8,6,24,0x3a4350,-29.6,4.5,0,'Caixa de passagem (parede)',wallM);
+  box(0.8,6,24,0x3a4350, 5.6,4.5,0,'Caixa de passagem (parede)',wallM);
+
+  /* fonte 12V (fora da caixa) */
+  box(12,5,7,0x4a545f,-42,2.5,4,'Fonte chaveada 12V · 2A');
+  box(11,0.6,6,0x39424e,-42,5.2,4,'Fonte chaveada 12V · 2A');
+
+  /* P4 + bornes */
+  box(2.6,2.2,2.6,0x14181e,-27,2.7,7,'Conector P4 fêmea com borne');
+  box(3.4,1.8,2.2,0xd8dee6,-22,2.5,7.5,'Borne / Wago · +12V');
+  box(3.4,0.5,2.2,0xff7a1a,-22,3.6,7.5,'Borne / Wago · +12V');
+  box(3.4,1.8,2.2,0xd8dee6,-17.8,2.5,7.5,'Borne / Wago · GND');
+  box(3.4,0.5,2.2,0xff7a1a,-17.8,3.6,7.5,'Borne / Wago · GND');
+
+  /* LM2596 */
+  box(6,0.4,3.8,0x1b3fae,-24,2.2,-4,'Conversor step-down LM2596 (12V→5V)');
+  cyl(1.1,1.2,0x8b93a1,-25.4,3,-4,'LM2596 · indutor');
+  box(1.1,0.9,1.0,0x2a6fdb,-22.2,2.9,-3,'LM2596 · trimpot de ajuste (5,0V)');
+  box(1.6,0.5,2.4,0x0c0f13,-23.6,2.6,-4.4,'LM2596 · CI regulador');
+
+  /* ESP32 */
+  box(5.6,0.4,11,0x14161a,-14,2.2,-1,'ESP32 NodeMCU (30 pinos)');
+  box(3.8,1.0,5,0x9aa7b5,-14,2.9,-3,'ESP32 · blindagem do ESP-WROOM-32');
+  box(2,0.5,1.2,0x39424e,-14,2.6,4.2,'ESP32 · micro-USB');
+  box(0.5,0.5,10.4,0xc9a227,-16.5,2.5,-1,'ESP32 · fileira de pinos (esquerda)');
+  box(0.5,0.5,10.4,0xc9a227,-11.5,2.5,-1,'ESP32 · fileira de pinos (direita: 3V3, GND, GPIO 23/22/21)');
+
+  /* módulo relé */
+  box(9,0.4,9.6,0x1b3fae,-3,2.2,-0.6,'Módulo relé 4 canais (optoacoplado)');
+  const relZ=[-3.9,-1.3,1.3,3.9];
+  relZ.forEach((z,i)=>{
+    box(2.6,1.9,2.2,0x2050b8,-4.2,3.25,z,'Relé canal '+(i+1)+(i<3?' · Porta '+(i+1):' · reserva'));
+    box(1.3,1.5,2.2,0x1c4532,0.6,3.0,z,'Bornes NO/COM/NC · canal '+(i+1));
+  });
+  box(1.6,0.5,1.2,0xc9a227,-6.5,2.6,4.4,'Header JD-VCC (jumper removido → recebe 5V)');
+
+  /* portas + eletroímãs */
+  const doorZ=[-16,0,16];
+  doorZ.forEach((z,i)=>{
+    const n=i+1;
+    box(8,16,0.9,0x5a4030,24,8,z,'Porta '+n);
+    box(10,1.6,2.2,0x333a44,24,17,z,'Batente / suporte do ímã · Porta '+n);
+    box(4.6,1.3,1.7,0xaab4c0,24,15.7,z,'Eletroímã 12V · Porta '+n);
+    box(4.2,0.5,1.3,0xb9c2cd,24,14.8,z,'Contra-placa · Porta '+n);
+  });
+
+  /* fios */
+  wire([[-36,3.4,4.5],[-31,3.2,6],[-28.2,2.9,7]],0x4a5563,'Cabo da fonte (12V) → P4');
+  wire([[-25.8,2.9,7],[-24.6,3.3,7.4],[-23.6,3.1,7.5]],0xff5c5c,'+12V · P4 → borne +12V');
+  wire([[-25.8,2.6,7.6],[-21,3.6,8.6],[-18,3.1,8.2],[-17.8,3.1,7.6]],0x93a0b1,'GND · P4 → borne GND');
+  wire([[-21.5,3.2,6.6],[-23.2,3.8,1.2],[-24.6,2.8,-2.2]],0xff5c5c,'+12V · borne → LM2596 IN+');
+  wire([[-17.5,3.2,6.6],[-20,4.0,0.8],[-23.4,2.8,-2.4]],0x93a0b1,'GND · borne → LM2596 IN−');
+  wire([[-23,2.8,-5.7],[-19,3.8,-6.2],[-15.4,2.8,-5.4]],0xffa94d,'+5V · LM2596 OUT+ → ESP32 VIN');
+  wire([[-24.4,2.8,-5.9],[-14,4.6,-7.4],[-6.4,2.9,-4.6]],0xffa94d,'+5V · LM2596 → relé JD-VCC (bobinas)');
+  wire([[-22.6,2.8,-6.1],[-18.4,3.5,-6.5],[-15,2.7,-5.8]],0x93a0b1,'GND · LM2596 OUT− → ESP32 GND');
+  wire([[-11.3,2.9,3.6],[-9.4,3.7,2.2],[-7.6,2.8,1.4]],0xc084fc,'3V3 · ESP32 → relé VCC (lógica)');
+  wire([[-11.3,2.7,3.0],[-9.6,3.4,1.4],[-7.6,2.6,0.4]],0x93a0b1,'GND · ESP32 → relé GND');
+  wire([[-11.3,2.9,-3.6],[-9.4,3.8,-3.4],[-7.6,2.9,-3.3]],0xffd43b,'Sinal · GPIO23 → IN1 (Porta 1)');
+  wire([[-11.3,2.9,-2.6],[-9.4,3.7,-2.2],[-7.6,2.9,-1.8]],0x69db7c,'Sinal · GPIO22 → IN2 (Porta 2)');
+  wire([[-11.3,2.9,-1.6],[-9.4,3.6,-0.9],[-7.6,2.9,-0.4]],0x4dd4f7,'Sinal · GPIO21 → IN3 (Porta 3)');
+  wire([[-21.5,3.4,7.2],[-10,5.6,8.6],[-1,3.6,5],[1.4,3.2,3.2]],0xff5c5c,'+12V · borne → COM1/COM2/COM3');
+  wire([[1.6,3.2,-3.9],[10,8,-13],[21.6,15.7,-16.6]],0xff8fa3,'Trava 1 · NC1 → eletroímã da Porta 1');
+  wire([[1.6,3.2,-1.3],[11,8,-1],[21.6,15.7,-0.6]],0xf0abfc,'Trava 2 · NC2 → eletroímã da Porta 2');
+  wire([[1.6,3.2,1.3],[11,8,11],[21.6,15.7,15.4]],0xffc078,'Trava 3 · NC3 → eletroímã da Porta 3');
+  doorZ.forEach((z,i)=>{
+    wire([[26.4,15.7,z-0.4],[31,7,z],[31,1.6,8],[6,1.4,10],[-17.6,2.9,8.4]],0x93a0b1,'GND · retorno do ímã '+(i+1)+' → borne GND');
+  });
+
+  /* --------- controles de órbita (custom) --------- */
+  const target=new THREE.Vector3(-2,6,0);
+  let theta=-0.85,phi=1.08,radius=70,interacted=false;
+  function applyCamera(){
+    phi=Math.max(0.15,Math.min(1.45,phi));
+    radius=Math.max(20,Math.min(160,radius));
+    camera.position.set(
+      target.x+radius*Math.sin(phi)*Math.sin(theta),
+      target.y+radius*Math.cos(phi),
+      target.z+radius*Math.sin(phi)*Math.cos(theta)
+    );
+    camera.lookAt(target);
+  }
+  const ptrs=new Map();
+  let lastPinch=0;
+  const dom=renderer.domElement;
+  dom.style.touchAction='none';
+  dom.addEventListener('pointerdown',e=>{ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});interacted=true;dom.setPointerCapture(e.pointerId);});
+  dom.addEventListener('pointerup',e=>{ptrs.delete(e.pointerId);lastPinch=0;});
+  dom.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);lastPinch=0;});
+  dom.addEventListener('pointermove',e=>{
+    if(ptrs.has(e.pointerId)){
+      const p=ptrs.get(e.pointerId);
+      if(ptrs.size===1){
+        theta-=(e.clientX-p.x)*0.006;
+        phi-=(e.clientY-p.y)*0.005;
+      }else if(ptrs.size===2){
+        p.x=e.clientX;p.y=e.clientY;
+        const arr=[...ptrs.values()];
+        const d=Math.hypot(arr[0].x-arr[1].x,arr[0].y-arr[1].y);
+        if(lastPinch)radius*=lastPinch/d;
+        lastPinch=d;
+      }
+      p.x=e.clientX;p.y=e.clientY;
+    }
+    hover(e);
+  });
+  dom.addEventListener('wheel',e=>{e.preventDefault();interacted=true;radius*=(1+Math.sign(e.deltaY)*0.09);},{passive:false});
+
+  /* --------- hover / rótulos --------- */
+  const ray=new THREE.Raycaster();
+  const mouse=new THREE.Vector2();
+  let hot=null;
+  function hover(e){
+    const r=dom.getBoundingClientRect();
+    mouse.x=((e.clientX-r.left)/r.width)*2-1;
+    mouse.y=-((e.clientY-r.top)/r.height)*2+1;
+    ray.setFromCamera(mouse,camera);
+    const hits=ray.intersectObjects(pickables,false);
+    const m=hits.length?hits[0].object:null;
+    if(hot&&hot!==m){hot.material.emissive.setHex(hot.userData._em||0);hot=null;}
+    if(m){
+      if(hot!==m){
+        m.userData._em=m.material.emissive.getHex();
+        m.material.emissive.setHex(0x8a5f10);
+        hot=m;
+      }
+      labelEl.textContent=m.userData.label;
+      labelEl.style.display='block';
+      labelEl.style.left=(e.clientX-r.left)+'px';
+      labelEl.style.top=(e.clientY-r.top)+'px';
+      dom.style.cursor='pointer';
+    }else{
+      labelEl.style.display='none';
+      dom.style.cursor='grab';
+    }
+  }
+  dom.addEventListener('pointerleave',()=>{labelEl.style.display='none';if(hot){hot.material.emissive.setHex(hot.userData._em||0);hot=null;}});
+
+  /* --------- loop --------- */
+  let running=true;
+  function resize(){
+    const w=wrap.clientWidth,h=wrap.clientHeight;
+    if(!w||!h)return;
+    renderer.setSize(w,h);
+    camera.aspect=w/h;camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize',resize);
+  function loop(){
+    requestAnimationFrame(loop);
+    if(!running)return;
+    if(!interacted)theta+=0.0022;
+    applyCamera();
+    renderer.render(scene,camera);
+  }
+  applyCamera();loop();
+  return {onShow(v){running=v;if(v)resize();}};
+}
+</script>
+</body>
+</html>

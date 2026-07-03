@@ -4,7 +4,7 @@ Esquema elétrico interativo (2D + montagem 3D) de um sistema de controle de
 acesso com ESP32, módulo relé de 4 canais e 3 eletroímãs 12V, acionado via
 MQTT.
 
-**Ver online:** https://SEU_USUARIO.github.io/NOME_DO_REPO/
+**Ver online:** https://adialaleal.github.io/circuito-controle-acesso/
 
 ## Conteúdo
 - `index.html` — esquema 2D interativo (hover pino a pino) + montagem 3D

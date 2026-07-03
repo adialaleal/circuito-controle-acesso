@@ -135,6 +135,58 @@
   .legend .row:hover,.legend .row.hot{background:var(--panel2)}
   .legend .sw{width:22px;height:4px;border-radius:2px;flex:none}
 
+  /* ---------- lista de compras ---------- */
+  #viewList{display:none}
+  .shop-head{
+    display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;
+    margin-bottom:16px;
+  }
+  .shop-progress{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+  .shop-progress b{color:var(--amber);font-size:15px}
+  .bar{width:220px;height:6px;border-radius:3px;background:var(--panel2);overflow:hidden;margin-top:6px}
+  .bar i{display:block;height:100%;background:var(--amber);width:0%;transition:width .25s}
+  .btn-print{
+    font-family:var(--mono);font-size:12px;background:var(--panel);color:var(--muted);
+    border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer;
+  }
+  .btn-print:hover{color:var(--ink);border-color:#3a4552}
+  .shop-group{margin-bottom:22px}
+  .shop-group h3{
+    font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--amber);margin:0 0 4px;padding-bottom:8px;border-bottom:1px solid var(--line);
+  }
+  .shop-group .sub{color:var(--muted);font-size:12px;margin:0 0 10px}
+  .shop-item{
+    display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:12px;align-items:start;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:12px 14px;margin-bottom:8px;transition:.15s;
+  }
+  .shop-item.done{opacity:.5}
+  .shop-item.done .it-name{text-decoration:line-through}
+  .shop-item input[type=checkbox]{
+    width:19px;height:19px;margin-top:2px;accent-color:var(--amber);cursor:pointer;
+  }
+  .it-name{font-weight:600;color:var(--ink);font-size:14px}
+  .it-spec{color:var(--muted);font-size:12.5px;font-family:var(--mono);margin-top:3px;line-height:1.5}
+  .it-why{color:#7c8894;font-size:11.5px;margin-top:5px;font-style:italic}
+  .it-why b{color:#9fb3c8;font-style:normal}
+  .qty{
+    font-family:var(--mono);font-size:12px;color:var(--amber);background:#22160a;
+    border:1px solid #7a5516;border-radius:7px;padding:4px 10px;white-space:nowrap;height:fit-content;
+  }
+  .shop-note{
+    background:var(--panel2);border:1px dashed #3a4552;border-radius:10px;
+    padding:12px 14px;font-size:12.5px;color:var(--muted);margin-top:6px;
+  }
+  .shop-note b{color:var(--amber)}
+  @media print{
+    header .tabs,.btn-print,aside,.doc,footer{display:none!important}
+    body{background:#fff;color:#000}
+    #viewList{display:block!important}
+    .shop-item{border-color:#ccc;background:#fff;break-inside:avoid}
+    .it-name{color:#000}.it-spec{color:#333}.qty{color:#000;border-color:#999;background:#fff}
+  }
+
   /* ---------- SVG: componentes e fios ---------- */
   .board{fill:var(--board);stroke:var(--board-line);stroke-width:1.5;rx:8}
   .board-blk{fill:url(#gBlk);stroke:#363a41;stroke-width:1.5}
@@ -200,6 +252,7 @@
   <div class="tabs" role="tablist">
     <button class="tab on" id="tab2d" role="tab" aria-selected="true">Esquema 2D</button>
     <button class="tab" id="tab3d" role="tab" aria-selected="false">Montagem 3D</button>
+    <button class="tab" id="tabList" role="tab" aria-selected="false">Lista de compras</button>
   </div>
 </header>
 
@@ -527,6 +580,48 @@
       <ol id="complist-ol"></ol>
     </div>
   </aside>
+</div>
+
+<div id="viewList">
+  <div class="shop-head">
+    <div>
+      <div class="shop-progress">Comprados: <b id="shop-count">0/13</b> itens</div>
+      <div class="bar"><i id="shop-bar"></i></div>
+    </div>
+    <button class="btn-print" onclick="window.print()">🖨 imprimir / salvar PDF</button>
+  </div>
+
+  <div class="shop-group" data-group="nucleo">
+    <h3>01 · Núcleo de controle</h3>
+    <p class="sub">O cérebro do sistema — recebe o comando MQTT e aciona os relés.</p>
+  <div id="grp-nucleo"></div>
+  </div>
+
+  <div class="shop-group" data-group="potencia">
+    <h3>02 · Potência &amp; distribuição</h3>
+    <p class="sub">Alimenta tudo e converte 12V→5V para a lógica.</p>
+  <div id="grp-potencia"></div>
+  </div>
+
+  <div class="shop-group" data-group="travas">
+    <h3>03 · Trava de cada porta <span style="color:var(--muted);font-weight:400">(× 3, uma por porta)</span></h3>
+    <p class="sub">Repita este grupo de itens 3 vezes — uma fechadura completa por porta.</p>
+  <div id="grp-travas"></div>
+  </div>
+
+  <div class="shop-group" data-group="consumiveis">
+    <h3>04 · Fiação, caixa e consumíveis</h3>
+    <p class="sub">O que não aparece no esquema mas falta na hora de montar.</p>
+  <div id="grp-consumiveis"></div>
+  </div>
+
+  <div class="shop-note">
+    <b>⚠ Antes de fechar o pedido:</b> confira que o módulo relé anunciado é <b>optoacoplado e ativo em nível
+    BAIXO</b> — é o padrão de mercado, mas alguns módulos chineses vêm ativo em nível ALTO e o firmware
+    precisaria ser invertido. Confira também a <b>força de retenção real</b> da fechadura magnética anunciada:
+    "eletroímã 12V" sozinho não diz nada — o número que importa é o <b>kgf</b> (quilograma-força) de retenção.
+    Para porta de ambiente (não portinhola/armário), o mínimo confortável é <b>60kgf</b>.
+  </div>
 </div>
 
 <!-- ================= COMO FUNCIONA ================= -->
@@ -871,21 +966,117 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){setPinned(null);res
 })();
 
 /* ============================================================
-   ABAS 2D / 3D
+   ABAS 2D / 3D / LISTA DE COMPRAS
 ============================================================ */
 const v2=document.getElementById('view2d'),v3=document.getElementById('view3d');
-const t2=document.getElementById('tab2d'),t3=document.getElementById('tab3d');
+const stageEl=document.querySelector('.stage'),vList=document.getElementById('viewList');
+const t2=document.getElementById('tab2d'),t3=document.getElementById('tab3d'),tL=document.getElementById('tabList');
 let three=null;
-function selectTab(is3d){
-  v2.style.display=is3d?'none':'block';
-  v3.style.display=is3d?'block':'none';
-  t2.classList.toggle('on',!is3d);t3.classList.toggle('on',is3d);
-  t2.setAttribute('aria-selected',String(!is3d));t3.setAttribute('aria-selected',String(is3d));
+function selectTab(mode){ // 'a' 2D | 'b' 3D | 'c' lista
+  const is3d=mode==='b', isList=mode==='c';
+  stageEl.style.display=isList?'none':'grid';
+  vList.style.display=isList?'block':'none';
+  v2.style.display=(!isList&&!is3d)?'block':'none';
+  v3.style.display=(!isList&&is3d)?'block':'none';
+  [[t2,'a'],[t3,'b'],[tL,'c']].forEach(([el,m])=>{
+    el.classList.toggle('on',m===mode);
+    el.setAttribute('aria-selected',String(m===mode));
+  });
   if(is3d&&!three)load3D();
   if(three)three.onShow(is3d);
 }
-t2.addEventListener('click',()=>selectTab(false));
-t3.addEventListener('click',()=>selectTab(true));
+t2.addEventListener('click',()=>selectTab('a'));
+t3.addEventListener('click',()=>selectTab('b'));
+tL.addEventListener('click',()=>selectTab('c'));
+
+/* ============================================================
+   LISTA DE COMPRAS — checklist com persistência local
+============================================================ */
+const SHOP_ITEMS=[
+  {id:'esp32',grp:'nucleo',name:'ESP32 DevKit V1 (30 pinos)',
+   spec:'Wi-Fi 2,4GHz + Bluetooth · chip ESP-WROOM-32 · barramento duplo de pinos',
+   why:'É o cérebro: assina os tópicos MQTT e comanda os 3 canais do relé.'},
+  {id:'rele',grp:'nucleo',name:'Módulo relé 4 canais 5V',
+   spec:'Optoacoplado · ativo em NÍVEL BAIXO · bornes de parafuso NO/COM/NC · header JD-VCC destacável',
+   why:'4 canais mesmo usando só 3 — o 4º fica de reserva/expansão.'},
+  {id:'lm2596',grp:'nucleo',name:'Conversor step-down LM2596',
+   spec:'Módulo ajustável com trimpot (não o fixo de 5V) · entrada até 35V',
+   why:'Abaixa os 12V da fonte para os 5V que alimentam ESP32 e bobinas do relé.'},
+
+  {id:'fonte',grp:'potencia',name:'Fonte chaveada 12V DC',
+   spec:'Mínimo 3A (36W) · bivolt 100–240V~ · saída plugue P4 (5,5×2,1mm)',
+   why:'3A e não 2A: com os 3 ímãs a plena carga + ESP32 + relés, 2A fica no limite.'},
+  {id:'p4',grp:'potencia',name:'Conector P4 fêmea com borne',
+   spec:'Jack de 5,5×2,1mm para painel, com 2 parafusos de saída',
+   why:'Ponte entre o plugue da fonte e os barramentos de distribuição.'},
+  {id:'wago',grp:'potencia',name:'Blocos de conexão Wago 221',
+   spec:'Alavanca laranja · pelo menos 2 blocos de 3–5 vias (um para +12V, um para GND)',
+   why:'Distribui +12V e GND para LM2596, relé e as 3 travas sem emenda solta.'},
+
+  {id:'ima',grp:'travas',name:'Fechadura eletroímã 12V · 60kgf+',
+   spec:'Força de retenção mínima 60kgf (NÃO confundir com os modelos de 2,5–5kgf para armário/portinhola)',
+   why:'Único item que segura a porta de verdade — o resto do circuito existe para controlar isso.'},
+  {id:'suporte',grp:'travas',name:'Suporte em L / contra-placa',
+   spec:'Geralmente acompanha a fechadura no kit — confirme no anúncio antes de comprar avulso',
+   why:'Fixa o ímã no batente e a contra-placa de aço na folha da porta.'},
+  {id:'diodo',grp:'travas',name:'Diodo 1N4007',
+   spec:'Pacote de 10–20 un (sobra para outros projetos) · 1A · 1000V',
+   why:'Diodo de roda-livre: absorve o pico de tensão quando a bobina desliga e protege o relé.'},
+
+  {id:'caixa',grp:'consumiveis',name:'Caixa de passagem plástica',
+   spec:'Tamanho 4×4" ou maior, com tampa · uso interno',
+   why:'Abriga LM2596, ESP32, relé e os Wagos num único ponto, longe de poeira/toque.'},
+  {id:'cabo-fino',grp:'consumiveis',name:'Cabo flexível fino (sinal)',
+   spec:'26–24 AWG, algumas cores · uns 3–5m',
+   why:'Liga GPIO23/22/21 do ESP32 aos IN1/IN2/IN3 do relé.'},
+  {id:'cabo-grosso',grp:'consumiveis',name:'Cabo flexível 18–20 AWG (potência)',
+   spec:'2 vias · metragem = 2× a distância da caixa até a porta mais longe, ×3 portas',
+   why:'Leva os 12V chaveados do COM/NC do relé até cada eletroímã — não usar fio fino aqui.'},
+  {id:'fixacao',grp:'consumiveis',name:'Parafusos, buchas e fita isolante',
+   spec:'Buchas compatíveis com o material do batente (madeira/alvenaria) · fita ou termorretrátil',
+   why:'Fixação física da fechadura e isolamento das emendas fora da caixa.'},
+];
+
+(function buildShoppingList(){
+  const groups={};
+  SHOP_ITEMS.forEach(it=>(groups[it.grp]=groups[it.grp]||[]).push(it));
+  let saved={};
+  try{saved=JSON.parse(localStorage.getItem('shop-checklist')||'{}');}catch(e){saved={};}
+
+  function render(){
+    Object.keys(groups).forEach(g=>{
+      const host=document.getElementById('grp-'+g);
+      if(!host)return;
+      host.innerHTML='';
+      groups[g].forEach(it=>{
+        const done=!!saved[it.id];
+        const row=document.createElement('label');
+        row.className='shop-item'+(done?' done':'');
+        row.innerHTML=`<input type="checkbox" ${done?'checked':''}>
+          <div>
+            <div class="it-name">${it.name}</div>
+            <div class="it-spec">${it.spec}</div>
+            <div class="it-why"><b>por quê:</b> ${it.why}</div>
+          </div>
+          <span class="qty">${it.grp==='travas'?'× 3':'× 1'}</span>`;
+        row.querySelector('input').addEventListener('change',e=>{
+          saved[it.id]=e.target.checked;
+          localStorage.setItem('shop-checklist',JSON.stringify(saved));
+          row.classList.toggle('done',e.target.checked);
+          updateProgress();
+        });
+        host.appendChild(row);
+      });
+    });
+  }
+  function updateProgress(){
+    const total=SHOP_ITEMS.length;
+    const done=SHOP_ITEMS.filter(it=>saved[it.id]).length;
+    document.getElementById('shop-count').textContent=done+'/'+total;
+    document.getElementById('shop-bar').style.width=(done/total*100)+'%';
+  }
+  render();updateProgress();
+})();
 
 function load3D(){
   three={onShow(){}};

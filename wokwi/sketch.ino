@@ -28,7 +28,10 @@ const char* MQTT_PREFIX = "tatoh-lucas-x7k2";
 
 const uint32_t UNLOCK_MS = 3000;              // tempo de porta destrancada
 
-const uint8_t  RELAY_PINS[3] = {23, 22, 21};  // GPIO23=P1, GPIO22=P2, GPIO21=P3
+// GPIO22=P1 (vitrine sup.), GPIO21=P2 (vitrine meio), GPIO16=P3 (gaveta).
+// Os pinos SPI 23/18/15/2/4 ficam reservados para o display TFT 4" da porta
+// (não simulado no Wokwi — na placa real, use TFT_eSPI ou LovyanGFX).
+const uint8_t  RELAY_PINS[3] = {22, 21, 16};
 /* ----------------------------------------- */
 
 WiFiClient   net;

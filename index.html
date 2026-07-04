@@ -20,9 +20,10 @@
     --wgnd:#93a0b1;           /* GND */
     --w5:#ffa94d;             /* +5V */
     --w33:#c084fc;            /* 3V3 */
-    --ws1:#ffd43b;            /* GPIO23 -> IN1 */
-    --ws2:#69db7c;            /* GPIO22 -> IN2 */
-    --ws3:#4dd4f7;            /* GPIO21 -> IN3 */
+    --ws1:#ffd43b;            /* GPIO22 -> IN1 */
+    --ws2:#69db7c;            /* GPIO21 -> IN2 */
+    --ws3:#4dd4f7;            /* GPIO16 -> IN3 */
+    --wdisp:#20c997;          /* barramento SPI do display */
     --wl1:#ff8fa3;            /* NC1 -> ímã 1 */
     --wl2:#f0abfc;            /* NC2 -> ímã 2 */
     --wl3:#ffc078;            /* NC3 -> ímã 3 */
@@ -247,8 +248,10 @@
 <header>
   <div class="eyebrow">Projeto · Automação de acesso</div>
   <h1>Controle remoto de 3 portas — ESP32 + Relé + Eletroímãs 12V (MQTT)</h1>
-  <p>Esquema interativo da montagem. Passe o mouse (ou toque) em qualquer componente ou fio para
-     destacar a rede elétrica inteira e ler os detalhes no inspetor ao lado. Clique para fixar a seleção.</p>
+  <p>Montagem no armário-vitrine de <b>1,00m × 50 × 50cm</b>: duas portas de acrílico e a gaveta com
+     rodinhas travadas por eletroímã, equipamentos atrás da porta branca e tela TFT 4" de status na frente.
+     Passe o mouse (ou toque) em qualquer componente ou fio para destacar a rede elétrica inteira e ler
+     os detalhes no inspetor ao lado. Clique para fixar a seleção.</p>
   <div class="tabs" role="tablist">
     <button class="tab on" id="tab2d" role="tab" aria-selected="true">Esquema 2D</button>
     <button class="tab" id="tab3d" role="tab" aria-selected="false">Montagem 3D</button>
@@ -260,7 +263,7 @@
 <div class="stage">
   <div>
     <div id="view2d" class="canvas-wrap">
-      <svg id="schematic" viewBox="0 0 1560 1000" xmlns="http://www.w3.org/2000/svg" aria-label="Esquema elétrico do controle de acesso">
+      <svg id="schematic" viewBox="0 0 1560 1210" xmlns="http://www.w3.org/2000/svg" aria-label="Esquema elétrico do controle de acesso">
         <defs>
           <linearGradient id="gBlk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#24272d"/><stop offset=".5" stop-color="#17191e"/><stop offset="1" stop-color="#0f1115"/></linearGradient>
           <linearGradient id="gBlu" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d4cd0"/><stop offset=".55" stop-color="#173fb2"/><stop offset="1" stop-color="#122e88"/></linearGradient>
@@ -302,10 +305,20 @@
           <!-- 3V3 -->
           <path class="wire" data-net="3v3" stroke="var(--w33)" d="M772,770 H800 V580 H888"/>
 
-          <!-- sinais -->
-          <path class="wire" data-net="sig1" stroke="var(--ws1)" d="M772,350 H826 V420 H888"/>
-          <path class="wire" data-net="sig2" stroke="var(--ws2)" d="M772,380 H840 V460 H888"/>
-          <path class="wire" data-net="sig3" stroke="var(--ws3)" d="M772,470 H854 V500 H888"/>
+          <!-- sinais (relés) -->
+          <path class="wire" data-net="sig1" stroke="var(--ws1)" d="M772,380 H832 V420 H888"/>
+          <path class="wire" data-net="sig2" stroke="var(--ws2)" d="M772,470 H846 V460 H888"/>
+          <path class="wire" data-net="sig3" stroke="var(--ws3)" d="M772,620 H860 V500 H888"/>
+
+          <!-- display TFT 4" SPI -->
+          <path class="wire" data-net="5v"   stroke="var(--w5)"    d="M700,860 V1012 H513"/>
+          <path class="wire" data-net="gnd"  stroke="var(--wgnd)"  d="M660,960 V1030 H513"/>
+          <path class="wire" data-net="disp" stroke="var(--wdisp)" d="M772,710 H786 V1048 H513"/>
+          <path class="wire" data-net="disp" stroke="var(--wdisp)" d="M772,650 H796 V1066 H513"/>
+          <path class="wire" data-net="disp" stroke="var(--wdisp)" d="M772,680 H806 V1084 H513"/>
+          <path class="wire" data-net="disp" stroke="var(--wdisp)" d="M772,350 H820 V1102 H513"/>
+          <path class="wire" data-net="disp" stroke="var(--wdisp)" d="M772,530 H826 V1120 H513"/>
+          <path class="wire" data-net="3v3"  stroke="var(--w33)"   d="M780,770 V1138 H513"/>
 
           <!-- travas (12V chaveado pelo contato NC) -->
           <path class="wire" data-net="lock1" stroke="var(--wl1)" d="M1192,420 H1240 V320 H1340"/>
@@ -326,6 +339,9 @@
           <circle class="dot" data-net="gnd" cx="1318" cy="355" r="4.5" fill="var(--wgnd)"/>
           <circle class="dot" data-net="gnd" cx="1318" cy="515" r="4.5" fill="var(--wgnd)"/>
           <circle class="dot" data-net="gnd" cx="1318" cy="675" r="4.5" fill="var(--wgnd)"/>
+          <circle class="dot" data-net="5v"  cx="700"  cy="860" r="4.5" fill="var(--w5)"/>
+          <circle class="dot" data-net="gnd" cx="660"  cy="960" r="4.5" fill="var(--wgnd)"/>
+          <circle class="dot" data-net="3v3" cx="780"  cy="770" r="4.5" fill="var(--w33)"/>
         </g>
 
         <!-- rótulos de rede -->
@@ -333,9 +349,10 @@
           <text class="netlabel" x="900" y="28" fill="var(--w12)">barramento +12V</text>
           <text class="netlabel" x="900" y="952" fill="var(--wgnd)">barramento GND (0V)</text>
           <text class="netlabel" x="300" y="852" fill="var(--w5)">+5V (saída do LM2596)</text>
-          <text class="netlabel" x="806" y="336" fill="var(--ws1)">GPIO23→IN1</text>
-          <text class="netlabel" x="820" y="406" fill="var(--ws2)">GPIO22→IN2</text>
-          <text class="netlabel" x="834" y="456" fill="var(--ws3)">GPIO21→IN3</text>
+          <text class="netlabel" x="806" y="372" fill="var(--ws1)">GPIO22→IN1</text>
+          <text class="netlabel" x="852" y="446" fill="var(--ws2)">GPIO21→IN2</text>
+          <text class="netlabel" x="866" y="612" fill="var(--ws3)">GPIO16→IN3</text>
+          <text class="netlabel" x="840" y="990" fill="var(--wdisp)">SPI do display · 5 fios</text>
         </g>
 
         <!-- ================= FONTE 12V ================= -->
@@ -553,12 +570,45 @@
           <circle cx="1440" cy="720" r="3.4" fill="#565f6a" stroke="#3d454e"/>
           <text class="silk-dim" x="1382" y="738" font-size="8">contra-placa (na porta)</text>
         </g>
+
+        <!-- ================= DISPLAY TFT 4" SPI ================= -->
+        <g class="comp" data-id="display">
+          <rect class="halo" x="222" y="982" width="312" height="216" rx="10"/>
+          <rect x="232" y="992" width="292" height="196" rx="8" fill="#7c1f1f" stroke="#a54242" stroke-width="1.5"/>
+          <circle class="screw" cx="244" cy="1004" r="5"/><circle class="screw" cx="244" cy="1176" r="5"/>
+          <circle class="screw" cx="470" cy="1004" r="5"/><circle class="screw" cx="470" cy="1176" r="5"/>
+          <rect x="250" y="1012" width="212" height="150" rx="3" fill="#04070c" stroke="#000"/>
+          <rect x="258" y="1020" width="196" height="134" rx="2" fill="#071018"/>
+          <text x="268" y="1042" font-size="11" font-weight="700" fill="#20c997" font-family="var(--mono)">CONTROLE DE ACESSO</text>
+          <line x1="268" y1="1050" x2="446" y2="1050" stroke="#123a2e" stroke-width="1"/>
+          <circle cx="273" cy="1061" r="4" fill="#69db7c"/>
+          <text x="284" y="1065" font-size="9" fill="#c8d1dc" font-family="var(--mono)">PORTA 1 · vitrine sup.</text>
+          <text x="446" y="1065" font-size="8.5" font-weight="700" fill="#69db7c" font-family="var(--mono)" text-anchor="end">TRANCADA</text>
+          <circle cx="273" cy="1087" r="4" fill="#69db7c"/>
+          <text x="284" y="1091" font-size="9" fill="#c8d1dc" font-family="var(--mono)">PORTA 2 · vitrine meio</text>
+          <text x="446" y="1091" font-size="8.5" font-weight="700" fill="#69db7c" font-family="var(--mono)" text-anchor="end">TRANCADA</text>
+          <circle cx="273" cy="1113" r="4" fill="#ffb224"/>
+          <text x="284" y="1117" font-size="9" fill="#c8d1dc" font-family="var(--mono)">PORTA 3 · gaveta</text>
+          <text x="446" y="1117" font-size="8.5" font-weight="700" fill="#ffb224" font-family="var(--mono)" text-anchor="end">ABERTA · 2s</text>
+          <text x="268" y="1146" font-size="8" fill="#5f7d99" font-family="var(--mono)">Wi-Fi ✔ · MQTT ✔ · fonte 12,1V</text>
+          <!-- pinos -->
+          <rect x="509" y="1007.5" width="9" height="9" class="pin-sq" stroke="var(--w5)" stroke-width="2"/><text x="503" y="1016" font-size="9" class="silk-dim" text-anchor="end" fill="var(--w5)" font-weight="700">VCC</text>
+          <rect x="509" y="1025.5" width="9" height="9" class="pin-sq" stroke="var(--wgnd)" stroke-width="2"/><text x="503" y="1034" font-size="9" class="silk-dim" text-anchor="end" fill="var(--wgnd)" font-weight="700">GND</text>
+          <rect x="509" y="1043.5" width="9" height="9" class="pin-sq" stroke="var(--wdisp)" stroke-width="2"/><text x="503" y="1052" font-size="9" class="silk-dim" text-anchor="end" fill="var(--wdisp)" font-weight="700">CS</text>
+          <rect x="509" y="1061.5" width="9" height="9" class="pin-sq" stroke="var(--wdisp)" stroke-width="2"/><text x="503" y="1070" font-size="9" class="silk-dim" text-anchor="end" fill="var(--wdisp)" font-weight="700">RESET</text>
+          <rect x="509" y="1079.5" width="9" height="9" class="pin-sq" stroke="var(--wdisp)" stroke-width="2"/><text x="503" y="1088" font-size="9" class="silk-dim" text-anchor="end" fill="var(--wdisp)" font-weight="700">DC</text>
+          <rect x="509" y="1097.5" width="9" height="9" class="pin-sq" stroke="var(--wdisp)" stroke-width="2"/><text x="503" y="1106" font-size="9" class="silk-dim" text-anchor="end" fill="var(--wdisp)" font-weight="700">SDI</text>
+          <rect x="509" y="1115.5" width="9" height="9" class="pin-sq" stroke="var(--wdisp)" stroke-width="2"/><text x="503" y="1124" font-size="9" class="silk-dim" text-anchor="end" fill="var(--wdisp)" font-weight="700">SCK</text>
+          <rect x="509" y="1133.5" width="9" height="9" class="pin-sq" stroke="var(--w33)" stroke-width="2"/><text x="503" y="1142" font-size="9" class="silk-dim" text-anchor="end" fill="var(--w33)" font-weight="700">LED</text>
+          <rect x="509" y="1151.5" width="9" height="9" class="pin-sq"/><text x="503" y="1160" font-size="9" class="silk-dim" text-anchor="end">SDO ·s/uso</text>
+          <text class="silk-dim" x="232" y="1204" font-size="10">TFT 4.0" SPI · ST7796S/ILI9488 · 480×320 · na porta do armário</text>
+        </g>
       </svg>
     </div>
 
     <div id="view3d">
       <div id="three-wrap">
-        <div id="hint3d">arraste para girar · scroll/pinça para zoom · passe o mouse nos componentes</div>
+        <div id="hint3d">arraste para girar · scroll/pinça para zoom · clique nas portas e na gaveta para abrir/fechar</div>
         <div id="label3d"></div>
       </div>
     </div>
@@ -585,7 +635,7 @@
 <div id="viewList">
   <div class="shop-head">
     <div>
-      <div class="shop-progress">Comprados: <b id="shop-count">0/13</b> itens</div>
+      <div class="shop-progress">Comprados: <b id="shop-count">0/14</b> itens</div>
       <div class="bar"><i id="shop-bar"></i></div>
     </div>
     <button class="btn-print" onclick="window.print()">🖨 imprimir / salvar PDF</button>
@@ -648,17 +698,20 @@
     <span class="step">App / automação publica<br><code>portas/1/abrir</code></span><span class="arr">→</span>
     <span class="step">Broker MQTT<br>(nuvem ou rede local)</span><span class="arr">→</span>
     <span class="step">ESP32 assinado no tópico<br>recebe a mensagem via Wi-Fi</span><span class="arr">→</span>
-    <span class="step">GPIO23 vai a nível BAIXO<br>bobina do canal 1 liga</span><span class="arr">→</span>
+    <span class="step">GPIO22 vai a nível BAIXO<br>bobina do canal 1 liga</span><span class="arr">→</span>
     <span class="step">Contato comuta NC→NO<br>ímã 1 perde os 12V</span><span class="arr">→</span>
     <span class="step">Porta 1 destrava<br>por 3 segundos</span><span class="arr">→</span>
-    <span class="step">GPIO23 volta a ALTO<br>NC fecha, ímã religa, tranca</span>
+    <span class="step">GPIO22 volta a ALTO<br>NC fecha, ímã religa, tranca</span>
   </div>
   <p>O módulo relé típico de 4 canais é <b>ativo em nível baixo</b>: o canal liga quando o pino
   <code>IN</code> vai para 0V. Por isso, no firmware, a primeira coisa do <code>setup()</code> é colocar
-  GPIO23/22/21 em <b>nível ALTO</b> — assim nada pisca no boot. Esses três GPIOs foram escolhidos de propósito:
+  GPIO22/21/16 em <b>nível ALTO</b> — assim nada pisca no boot. Esses três GPIOs foram escolhidos de propósito:
   ficam na coluna direita da placa (do mesmo lado do 3V3 e do GND, encurtando os jumpers) e
-  <b>não são pinos de strapping</b> — diferente de GPIO0, 2, 5, 12 e 15, eles não interferem no boot
-  nem oscilam durante a inicialização.</p>
+  <b>não são pinos de strapping</b> — não interferem no boot nem oscilam durante a inicialização.
+  Já os pinos "nobres" do barramento SPI (<code>GPIO23</code> MOSI e <code>GPIO18</code> SCK) ficaram
+  reservados para o display. Os strapping GPIO15 e GPIO2 podem ir no display sem medo: são <b>saídas</b>
+  do ESP32 (CS e DC), e a tela não força nível nelas durante o boot — o que não pode é usá-los para
+  acionar relé, senão as portas piscam ao ligar.</p>
 
   <h3>4 · O papel do diodo 1N4007</h3>
   <p>O eletroímã é uma bobina. Quando o relé corta os 12V, a bobina tenta manter a corrente e gera um
@@ -678,7 +731,18 @@
   mais ESP32 + relés ≈ 0,2&nbsp;A referidos a 12V. A fonte de 2A fecha a conta, mas trabalhando perto do limite
   térmico dela. Se puder, use <b>12V/3A</b> — custa quase o mesmo e roda folgada. E confira a força de retenção
   do ímã escolhido: modelos de bancada de ~2,5&nbsp;kgf seguram portinhola de armário; para porta de ambiente
-  o usual é 60&nbsp;kgf ou mais.</p>
+  o usual é 60&nbsp;kgf ou mais. A tela TFT soma uns <b>100&nbsp;mA</b> em 5V — entra na folga da conta.</p>
+
+  <h3>7 · A tela de status (TFT 4" SPI)</h3>
+  <p>Embutida no <b>canto superior direito da porta branca</b> (o compartimento de equipamentos), a tela
+  mostra em tempo real o estado das três travas, o Wi-Fi e a conexão MQTT — o cliente vê o que está
+  acontecendo sem abrir nada. O ESP32 desenha nela pelo barramento <b>SPI</b>
+  (<code>GPIO23</code> SDI, <code>GPIO18</code> SCK, <code>GPIO15</code> CS, <code>GPIO2</code> DC,
+  <code>GPIO4</code> RESET) usando a biblioteca <code>TFT_eSPI</code> ou <code>LovyanGFX</code> —
+  qualquer uma redesenha a tela inteira em milissegundos a 40MHz. O chicote de 8 vias
+  (5V, GND + 6 sinais) sai do ESP32 e chega à tela pelo <b>lado das dobradiças</b>, com um laço de
+  folga: assim a porta abre e fecha sem tracionar os fios. Se a sua tela tiver touch (pinos T_CLK,
+  T_CS…), dá para usá-la depois como botão local de abertura — os GPIOs 19, 25, 26 e 27 estão livres.</p>
 </section>
 
 <!-- ================= TABELA DE CONEXÕES ================= -->
@@ -700,15 +764,23 @@
       <tr><td class="mono">08</td><td class="mono">LM2596 · OUT+ (5,0V)</td><td class="mono">Relé · JD-VCC <i>(jumper removido)</i></td><td><span class="chip" style="background:var(--w5)"></span>laranja</td><td>Alimenta as bobinas dos relés (são de 5V)</td></tr>
       <tr><td class="mono">09</td><td class="mono">ESP32 · 3V3</td><td class="mono">Relé · VCC</td><td><span class="chip" style="background:var(--w33)"></span>roxo</td><td>Alimenta o lado lógico/optoacopladores em 3,3V</td></tr>
       <tr><td class="mono">10</td><td class="mono">ESP32 · GND</td><td class="mono">Relé · GND</td><td><span class="chip" style="background:var(--wgnd)"></span>preto</td><td>Referência dos sinais IN</td></tr>
-      <tr><td class="mono">11</td><td class="mono">ESP32 · GPIO23</td><td class="mono">Relé · IN1</td><td><span class="chip" style="background:var(--ws1)"></span>amarelo</td><td>Comando da Porta 1 (ativo em nível baixo)</td></tr>
-      <tr><td class="mono">12</td><td class="mono">ESP32 · GPIO22</td><td class="mono">Relé · IN2</td><td><span class="chip" style="background:var(--ws2)"></span>verde</td><td>Comando da Porta 2</td></tr>
-      <tr><td class="mono">13</td><td class="mono">ESP32 · GPIO21</td><td class="mono">Relé · IN3</td><td><span class="chip" style="background:var(--ws3)"></span>azul</td><td>Comando da Porta 3 (IN4 fica livre)</td></tr>
+      <tr><td class="mono">11</td><td class="mono">ESP32 · GPIO22</td><td class="mono">Relé · IN1</td><td><span class="chip" style="background:var(--ws1)"></span>amarelo</td><td>Comando da Porta 1 · vitrine superior (ativo em nível baixo)</td></tr>
+      <tr><td class="mono">12</td><td class="mono">ESP32 · GPIO21</td><td class="mono">Relé · IN2</td><td><span class="chip" style="background:var(--ws2)"></span>verde</td><td>Comando da Porta 2 · vitrine do meio</td></tr>
+      <tr><td class="mono">13</td><td class="mono">ESP32 · GPIO16 (RX2)</td><td class="mono">Relé · IN3</td><td><span class="chip" style="background:var(--ws3)"></span>azul</td><td>Comando da Porta 3 · gaveta (IN4 fica livre)</td></tr>
       <tr><td class="mono">14</td><td class="mono">Borne +12V</td><td class="mono">Relé · COM1, COM2, COM3</td><td><span class="chip" style="background:var(--w12)"></span>vermelho ×3</td><td>Energia que passa pelos contatos</td></tr>
       <tr><td class="mono">15</td><td class="mono">Relé · NC1</td><td class="mono">Eletroímã 1 · (+)</td><td><span class="chip" style="background:var(--wl1)"></span>cabo paralelo 0,75mm²</td><td>Trava da Porta 1 (fechado em repouso)</td></tr>
       <tr><td class="mono">16</td><td class="mono">Relé · NC2</td><td class="mono">Eletroímã 2 · (+)</td><td><span class="chip" style="background:var(--wl2)"></span>cabo paralelo 0,75mm²</td><td>Trava da Porta 2</td></tr>
       <tr><td class="mono">17</td><td class="mono">Relé · NC3</td><td class="mono">Eletroímã 3 · (+)</td><td><span class="chip" style="background:var(--wl3)"></span>cabo paralelo 0,75mm²</td><td>Trava da Porta 3</td></tr>
       <tr><td class="mono">18</td><td class="mono">Eletroímãs 1–3 · (−)</td><td class="mono">Borne GND</td><td><span class="chip" style="background:var(--wgnd)"></span>cabo paralelo 0,75mm²</td><td>Retorno da corrente dos ímãs</td></tr>
       <tr><td class="mono">19</td><td class="mono">Diodos D1–D3 (1N4007)</td><td class="mono">Em paralelo com cada ímã</td><td><span class="chip" style="background:#d0d6dd"></span>—</td><td><b>Faixa (catodo) no terminal +</b> · absorve o pico da bobina</td></tr>
+      <tr><td class="mono">20</td><td class="mono">LM2596 · OUT+ (5,0V)</td><td class="mono">Display · VCC</td><td><span class="chip" style="background:var(--w5)"></span>laranja</td><td>Alimentação da tela (o módulo tem regulador próprio)</td></tr>
+      <tr><td class="mono">21</td><td class="mono">Display · GND</td><td class="mono">Borne GND</td><td><span class="chip" style="background:var(--wgnd)"></span>preto</td><td>Retorno da tela</td></tr>
+      <tr><td class="mono">22</td><td class="mono">ESP32 · GPIO15</td><td class="mono">Display · CS</td><td><span class="chip" style="background:var(--wdisp)"></span>verde-água</td><td>Chip-select do SPI</td></tr>
+      <tr><td class="mono">23</td><td class="mono">ESP32 · GPIO4</td><td class="mono">Display · RESET</td><td><span class="chip" style="background:var(--wdisp)"></span>verde-água</td><td>Reset do controlador da tela</td></tr>
+      <tr><td class="mono">24</td><td class="mono">ESP32 · GPIO2</td><td class="mono">Display · DC</td><td><span class="chip" style="background:var(--wdisp)"></span>verde-água</td><td>Seleciona dado ou comando</td></tr>
+      <tr><td class="mono">25</td><td class="mono">ESP32 · GPIO23 (MOSI)</td><td class="mono">Display · SDI</td><td><span class="chip" style="background:var(--wdisp)"></span>verde-água</td><td>Dados do desenho (SPI a 40MHz)</td></tr>
+      <tr><td class="mono">26</td><td class="mono">ESP32 · GPIO18 (SCK)</td><td class="mono">Display · SCK</td><td><span class="chip" style="background:var(--wdisp)"></span>verde-água</td><td>Clock do SPI</td></tr>
+      <tr><td class="mono">27</td><td class="mono">ESP32 · 3V3</td><td class="mono">Display · LED</td><td><span class="chip" style="background:var(--w33)"></span>roxo</td><td>Backlight sempre aceso (ou GPIO32 + PWM p/ dimerizar)</td></tr>
     </tbody>
   </table>
   <div class="warn"><b>JD-VCC, explicado:</b> nesses módulos, o pino VCC alimenta só o lado do LED/optoacoplador
@@ -726,11 +798,12 @@
 const NETS = {
   '12v' : {name:'+12V (potência)',        color:'var(--w12)',  hex:0xff5c5c, desc:'Sai da fonte, energiza o LM2596 e os contatos COM dos canais 1–3 do relé. É a corrente que segura os ímãs.'},
   'gnd' : {name:'GND · 0V comum',         color:'var(--wgnd)', hex:0x93a0b1, desc:'Retorno único de todo o sistema: fonte, LM2596, ESP32, módulo relé e os três eletroímãs compartilham o mesmo 0V.'},
-  '5v'  : {name:'+5V (saída do LM2596)',  color:'var(--w5)',   hex:0xffa94d, desc:'Ajustada no trimpot para 5,0V. Alimenta o VIN do ESP32 e o JD-VCC do relé (bobinas de 5V).'},
-  '3v3' : {name:'3V3 (lógica)',           color:'var(--w33)',  hex:0xc084fc, desc:'Do regulador interno do ESP32 para o pino VCC do módulo relé — alimenta só o lado dos optoacopladores.'},
-  'sig1': {name:'Sinal · Porta 1',        color:'var(--ws1)',  hex:0xffd43b, desc:'GPIO23 → IN1. Ativo em nível BAIXO: 0V liga a bobina do canal 1 e destrava a porta por ~3s.'},
-  'sig2': {name:'Sinal · Porta 2',        color:'var(--ws2)',  hex:0x69db7c, desc:'GPIO22 → IN2. Ativo em nível BAIXO: 0V liga a bobina do canal 2.'},
-  'sig3': {name:'Sinal · Porta 3',        color:'var(--ws3)',  hex:0x4dd4f7, desc:'GPIO21 → IN3. Ativo em nível BAIXO: 0V liga a bobina do canal 3. O IN4 fica de reserva.'},
+  '5v'  : {name:'+5V (saída do LM2596)',  color:'var(--w5)',   hex:0xffa94d, desc:'Ajustada no trimpot para 5,0V. Alimenta o VIN do ESP32, o JD-VCC do relé (bobinas de 5V) e o VCC do display.'},
+  '3v3' : {name:'3V3 (lógica)',           color:'var(--w33)',  hex:0xc084fc, desc:'Do regulador interno do ESP32 para o VCC do módulo relé (lado dos optoacopladores) e o LED/backlight do display.'},
+  'sig1': {name:'Sinal · Porta 1',        color:'var(--ws1)',  hex:0xffd43b, desc:'GPIO22 → IN1. Ativo em nível BAIXO: 0V liga a bobina do canal 1 e destrava a porta por ~3s.'},
+  'sig2': {name:'Sinal · Porta 2',        color:'var(--ws2)',  hex:0x69db7c, desc:'GPIO21 → IN2. Ativo em nível BAIXO: 0V liga a bobina do canal 2.'},
+  'sig3': {name:'Sinal · Porta 3 (gaveta)',color:'var(--ws3)', hex:0x4dd4f7, desc:'GPIO16 → IN3. Ativo em nível BAIXO: 0V liga a bobina do canal 3 e solta a gaveta. O IN4 fica de reserva.'},
+  'disp': {name:'SPI do display (5 fios)', color:'var(--wdisp)',hex:0x20c997, desc:'Barramento do TFT: SDI/MOSI=GPIO23, SCK=GPIO18, CS=GPIO15, DC=GPIO2, RESET=GPIO4. Só o ESP32 fala (o SDO de leitura fica sem uso), por isso 5 fios bastam.'},
   'lock1':{name:'Trava 1 · 12V chaveado', color:'var(--wl1)',  hex:0xff8fa3, desc:'COM1→NC1→ímã 1. Em repouso o NC está fechado e o ímã fica energizado (porta trancada). O relé interrompe esse fio por 3s para abrir.'},
   'lock2':{name:'Trava 2 · 12V chaveado', color:'var(--wl2)',  hex:0xf0abfc, desc:'COM2→NC2→ímã 2. Fechado em repouso; interrompido durante a abertura.'},
   'lock3':{name:'Trava 3 · 12V chaveado', color:'var(--wl3)',  hex:0xffc078, desc:'COM3→NC3→ímã 3. Fechado em repouso; interrompido durante a abertura.'}
@@ -752,36 +825,39 @@ const COMPS = {
   lm2596:  {num:'05', name:'Conversor step-down LM2596', nets:['12v','gnd','5v'],
     desc:'Abaixa os 12V da fonte para 5,0V. Ajuste o trimpot azul COM MULTÍMETRO antes de conectar o ESP32.',
     conns:['<b>IN+</b> ← borne +12V','<b>IN−</b> ← borne GND','<b>OUT+ (5,0V)</b> → ESP32 · VIN &nbsp;e&nbsp; Relé · JD-VCC','<b>OUT−</b> → ESP32 · GND']},
-  esp32:   {num:'06', name:'ESP32 NodeMCU (ESP-WROOM-32, 30 pinos)', nets:['5v','gnd','3v3','sig1','sig2','sig3'],
-    desc:'O cérebro: conecta no Wi-Fi, assina os tópicos MQTT e comanda os 3 canais do relé. GPIO 23/22/21 escolhidos por não serem pinos de strapping (não piscam no boot) e por ficarem do mesmo lado que 3V3 e GND.',
-    conns:['<b>VIN</b> ← 5V do LM2596','<b>GND</b> ↔ LM2596 OUT− e Relé GND','<b>3V3</b> → Relé · VCC','<b>GPIO23</b> → Relé · IN1 (Porta 1)','<b>GPIO22</b> → Relé · IN2 (Porta 2)','<b>GPIO21</b> → Relé · IN3 (Porta 3)']},
-  rele:    {num:'07', name:'Módulo relé 4 canais (optoacoplado)', nets:['sig1','sig2','sig3','3v3','5v','gnd','12v','lock1','lock2','lock3'],
+  esp32:   {num:'06', name:'ESP32 NodeMCU (ESP-WROOM-32, 30 pinos)', nets:['5v','gnd','3v3','sig1','sig2','sig3','disp'],
+    desc:'O cérebro: conecta no Wi-Fi, assina os tópicos MQTT, comanda os 3 canais do relé e desenha o status na tela TFT. Relés em GPIO 22/21/16 (não são pinos de strapping — não piscam no boot); o barramento SPI (23/18/15/2/4) fica dedicado ao display.',
+    conns:['<b>VIN</b> ← 5V do LM2596','<b>GND</b> ↔ LM2596 OUT− e Relé GND','<b>3V3</b> → Relé · VCC e display · LED','<b>GPIO22</b> → Relé · IN1 (Porta 1)','<b>GPIO21</b> → Relé · IN2 (Porta 2)','<b>GPIO16</b> → Relé · IN3 (Porta 3 · gaveta)','<b>GPIO23/18/15/2/4</b> → display · SDI/SCK/CS/DC/RESET']},
+  display: {num:'07', name:'Display TFT 4.0" SPI colorido (480×320)', nets:['5v','gnd','disp','3v3'],
+    desc:'A tela no canto superior direito da porta branca: mostra o estado das 3 travas, Wi-Fi e MQTT em tempo real. Controlador ST7796S ou ILI9488, dirigido por SPI (lib TFT_eSPI ou LovyanGFX no firmware).',
+    conns:['<b>VCC</b> ← 5V do LM2596 (o módulo tem regulador próprio)','<b>GND</b> → barramento GND','<b>CS</b> ← GPIO15 · <b>DC</b> ← GPIO2 · <b>RESET</b> ← GPIO4','<b>SDI (MOSI)</b> ← GPIO23 · <b>SCK</b> ← GPIO18','<b>LED</b> (backlight) ← 3V3 — ou GPIO32 com PWM p/ dimerizar','<b>SDO</b>: sem uso — a tela só recebe dados']},
+  rele:    {num:'08', name:'Módulo relé 4 canais (optoacoplado)', nets:['sig1','sig2','sig3','3v3','5v','gnd','12v','lock1','lock2','lock3'],
     desc:'A ponte entre a lógica (3,3V) e a potência (12V). Ativo em nível baixo. Os ímãs vão no contato NC: trancado por padrão sem gastar bobina.',
-    conns:['<b>VCC</b> ← ESP32 3V3 · <b>GND</b> ← ESP32 GND','<b>JD-VCC</b> ← 5V do LM2596 (jumper removido)','<b>IN1/IN2/IN3</b> ← GPIO23/22/21','<b>COM1–3</b> ← barramento +12V','<b>NC1–3</b> → eletroímãs 1–3 (+)','<b>NO</b> e canal 4: sem uso (reserva)']},
-  ima1:    {num:'08', name:'Eletroímã 12V · Porta 1', nets:['lock1','gnd'],
-    desc:'Trava magnética: energizada = porta presa na contra-placa. Sem energia, solta. Fail-safe por natureza.',
-    conns:['<b>(+)</b> ← Relé · NC1 (cabo paralelo 0,75mm²)','<b>(−)</b> → borne GND','<b>D1</b> em paralelo, faixa no (+)','Contra-placa parafusada na folha da porta, ímã no batente.']},
-  ima2:    {num:'09', name:'Eletroímã 12V · Porta 2', nets:['lock2','gnd'],
-    desc:'Trava magnética da Porta 2 — mesmo esquema da Porta 1, no canal 2 do relé.',
+    conns:['<b>VCC</b> ← ESP32 3V3 · <b>GND</b> ← ESP32 GND','<b>JD-VCC</b> ← 5V do LM2596 (jumper removido)','<b>IN1/IN2/IN3</b> ← GPIO22/21/16','<b>COM1–3</b> ← barramento +12V','<b>NC1–3</b> → eletroímãs 1–3 (+)','<b>NO</b> e canal 4: sem uso (reserva)']},
+  ima1:    {num:'09', name:'Eletroímã 12V · Porta 1 (vitrine superior)', nets:['lock1','gnd'],
+    desc:'Trava magnética da porta de acrílico de cima: energizada = porta presa na contra-placa. Sem energia, solta. Fail-safe por natureza. Fica no montante frontal esquerdo (lado oposto às dobradiças).',
+    conns:['<b>(+)</b> ← Relé · NC1 (cabo paralelo 0,75mm²)','<b>(−)</b> → borne GND','<b>D1</b> em paralelo, faixa no (+)','Contra-placa parafusada no acrílico, ímã no montante do armário.']},
+  ima2:    {num:'10', name:'Eletroímã 12V · Porta 2 (vitrine do meio)', nets:['lock2','gnd'],
+    desc:'Trava magnética da porta de acrílico do meio — mesmo esquema da Porta 1, no canal 2 do relé.',
     conns:['<b>(+)</b> ← Relé · NC2','<b>(−)</b> → borne GND','<b>D2</b> em paralelo, faixa no (+)']},
-  ima3:    {num:'10', name:'Eletroímã 12V · Porta 3', nets:['lock3','gnd'],
-    desc:'Trava magnética da Porta 3 — canal 3 do relé.',
+  ima3:    {num:'11', name:'Eletroímã 12V · Porta 3 (gaveta com rodinhas)', nets:['lock3','gnd'],
+    desc:'Trava magnética da gaveta — canal 3 do relé. Montado no fundo do vão inferior; a contra-placa vai na traseira da gaveta, segurando-a encaixada.',
     conns:['<b>(+)</b> ← Relé · NC3','<b>(−)</b> → borne GND','<b>D3</b> em paralelo, faixa no (+)']},
-  d1:      {num:'11', name:'Diodo flyback D1 · 1N4007', nets:['lock1','gnd'],
+  d1:      {num:'12', name:'Diodo flyback D1 · 1N4007', nets:['lock1','gnd'],
     desc:'Absorve o pico de tensão reversa da bobina do ímã 1 quando o relé corta os 12V. Protege contatos e o ESP32 contra ruído.',
     conns:['<b>Catodo (faixa)</b> → terminal (+) do ímã 1','<b>Anodo</b> → terminal (−) do ímã 1','⚠ Invertido = curto-circuito da fonte.']},
-  d2:      {num:'12', name:'Diodo flyback D2 · 1N4007', nets:['lock2','gnd'],
+  d2:      {num:'13', name:'Diodo flyback D2 · 1N4007', nets:['lock2','gnd'],
     desc:'Proteção da bobina do ímã 2 — idêntico ao D1.',
     conns:['<b>Catodo (faixa)</b> → (+) do ímã 2','<b>Anodo</b> → (−) do ímã 2']},
-  d3:      {num:'13', name:'Diodo flyback D3 · 1N4007', nets:['lock3','gnd'],
+  d3:      {num:'14', name:'Diodo flyback D3 · 1N4007', nets:['lock3','gnd'],
     desc:'Proteção da bobina do ímã 3 — idêntico ao D1.',
     conns:['<b>Catodo (faixa)</b> → (+) do ímã 3','<b>Anodo</b> → (−) do ímã 3']},
-  cabos:   {num:'14', name:'Fiação: jumpers + cabo paralelo', nets:[], virtual:true,
-    desc:'Jumpers fêmea-fêmea para os sinais ESP32↔relé; cabo paralelo 0,75mm² para os trechos até as portas (aguenta a corrente e a distância com folga).',
-    conns:['Sinais e alimentação lógica: jumpers','Trechos relé→ímã e ímã→GND: cabo paralelo','Emendas: Wago ou borne — nada de fita isolante solta.']},
-  caixa:   {num:'15', name:'Caixa de passagem (invólucro)', nets:[], virtual:true,
-    desc:'Abriga fonte de sinal de poeira, dedos e puxões: ESP32, relé, LM2596 e bornes ficam dentro; só o cabo paralelo sai para as portas.',
-    conns:['Fixe as placas com parafusos/espaçadores, não soltas.','Deixe folga de ventilação — a fonte e o LM2596 esquentam.']}
+  cabos:   {num:'15', name:'Fiação: jumpers + cabo paralelo', nets:[], virtual:true,
+    desc:'Jumpers fêmea-fêmea para os sinais ESP32↔relé e o chicote do display; cabo paralelo 0,75mm² para os trechos até as travas (aguenta a corrente com folga).',
+    conns:['Sinais, SPI do display e alimentação lógica: jumpers','Trechos relé→ímã e ímã→GND: cabo paralelo','Chicote do display: deixe um laço de folga no lado das dobradiças p/ a porta abrir','Emendas: Wago ou borne — nada de fita isolante solta.']},
+  caixa:   {num:'16', name:'Compartimento de equipamentos (porta branca)', nets:[], virtual:true,
+    desc:'O terceiro vão do armário: fonte, LM2596, ESP32, relé e Wagos montados no piso do compartimento, com a tela embutida na própria porta. Protegido de poeira, dedos e puxões.',
+    conns:['Fixe as placas com parafusos/espaçadores ou fita dupla-face de espuma.','Fure passagens discretas nas prateleiras p/ os cabos das travas (cima: vitrines / baixo: gaveta).','Deixe folga de ventilação — a fonte e o LM2596 esquentam.']}
 };
 
 /* ============================================================
@@ -792,7 +868,7 @@ function el(tag,attrs,parent){const e=document.createElementNS(SVGNS,tag);for(co
 function netColor(net){return net?NETS[net].color:'#c9a227';}
 
 const ESP_LEFT =[{n:'EN'},{n:'VP'},{n:'VN'},{n:'D34'},{n:'D35'},{n:'D32'},{n:'D33'},{n:'D25'},{n:'D26'},{n:'D27'},{n:'D14'},{n:'D12'},{n:'D13'},{n:'GND',net:'gnd'},{n:'VIN',net:'5v'}];
-const ESP_RIGHT=[{n:'D23',net:'sig1'},{n:'D22',net:'sig2'},{n:'TX0'},{n:'RX0'},{n:'D21',net:'sig3'},{n:'D19'},{n:'D18'},{n:'D5'},{n:'TX2'},{n:'RX2'},{n:'D4'},{n:'D2'},{n:'D15'},{n:'GND',net:'gnd'},{n:'3V3',net:'3v3'}];
+const ESP_RIGHT=[{n:'D23',net:'disp'},{n:'D22',net:'sig1'},{n:'TX0'},{n:'RX0'},{n:'D21',net:'sig2'},{n:'D19'},{n:'D18',net:'disp'},{n:'D5'},{n:'TX2'},{n:'RX2',net:'sig3'},{n:'D4',net:'disp'},{n:'D2',net:'disp'},{n:'D15',net:'disp'},{n:'GND',net:'gnd'},{n:'3V3',net:'3v3'}];
 
 (function drawEspPins(){
   const g=document.getElementById('esp-pins');
@@ -1001,7 +1077,10 @@ const SHOP_ITEMS=[
    why:'4 canais mesmo usando só 3 — o 4º fica de reserva/expansão.'},
   {id:'lm2596',grp:'nucleo',name:'Conversor step-down LM2596',
    spec:'Módulo ajustável com trimpot (não o fixo de 5V) · entrada até 35V',
-   why:'Abaixa os 12V da fonte para os 5V que alimentam ESP32 e bobinas do relé.'},
+   why:'Abaixa os 12V da fonte para os 5V que alimentam ESP32, bobinas do relé e a tela.'},
+  {id:'display',grp:'nucleo',name:'Tela TFT 4.0" SPI colorida — ✔ você já tem',
+   spec:'ST7796S ou ILI9488 · 480×320 · SPI · VCC 5V (regulador on-board) · vai embutida na porta branca',
+   why:'Mostra o estado das 3 travas, Wi-Fi e MQTT na frente do armário. Já está em mãos — é só fiar (8 vias).'},
 
   {id:'fonte',grp:'potencia',name:'Fonte chaveada 12V DC',
    spec:'Mínimo 3A (36W) · bivolt 100–240V~ · saída plugue P4 (5,5×2,1mm)',
@@ -1100,7 +1179,7 @@ function init3D(){
 
   const scene=new THREE.Scene();
   scene.background=new THREE.Color(0x0a0d12);
-  scene.fog=new THREE.Fog(0x0a0d12,90,220);
+  scene.fog=new THREE.Fog(0x0a0d12,300,900);
 
   const camera=new THREE.PerspectiveCamera(45,wrap.clientWidth/wrap.clientHeight,0.1,500);
 
@@ -1126,96 +1205,181 @@ function init3D(){
   }
   function wire(points,hex,label){
     const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(p[0],p[1],p[2])));
-    const geo=new THREE.TubeGeometry(curve,40,0.16,8,false);
+    const geo=new THREE.TubeGeometry(curve,40,0.45,8,false);
     const m=new THREE.Mesh(geo,mat(hex,{roughness:.5}));
     m.userData.label=label;pickables.push(m);scene.add(m);return m;
   }
 
   /* chão */
-  const ground=new THREE.Mesh(new THREE.PlaneGeometry(240,160),mat(0x10141b,{roughness:1,metalness:0}));
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(700,500),mat(0x10141b,{roughness:1,metalness:0}));
   ground.rotation.x=-Math.PI/2;scene.add(ground);
-  const grid=new THREE.GridHelper(160,32,0x1e2632,0x161d27);
+  const grid=new THREE.GridHelper(500,50,0x1e2632,0x161d27);
   grid.position.y=0.02;scene.add(grid);
 
-  /* caixa de passagem */
-  box(36,1.5,24,0x262c34,-12,0.75,0,'Caixa de passagem (base)');
-  const wallM={transparent:true,opacity:0.28};
-  box(36,6,0.8,0x3a4350,-12,4.5,-11.6,'Caixa de passagem (parede)',wallM);
-  box(36,6,0.8,0x3a4350,-12,4.5, 11.6,'Caixa de passagem (parede)',wallM);
-  box(0.8,6,24,0x3a4350,-29.6,4.5,0,'Caixa de passagem (parede)',wallM);
-  box(0.8,6,24,0x3a4350, 5.6,4.5,0,'Caixa de passagem (parede)',wallM);
+  function boxP(parent,w,h,d,color,x,y,z,label,opts){
+    const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color,opts));
+    m.position.set(x,y,z);
+    if(label){m.userData.label=label;pickables.push(m);}
+    parent.add(m);return m;
+  }
 
-  /* fonte 12V (fora da caixa) */
-  box(12,5,7,0x4a545f,-42,2.5,4,'Fonte chaveada 12V · 2A');
-  box(11,0.6,6,0x39424e,-42,5.2,4,'Fonte chaveada 12V · 2A');
+  /* ======== ARMÁRIO-VITRINE · 50 × 50 × 100 cm (1 unidade = 1 cm) ======== */
+  const WHITE=0xeef1f4, FRAME=0xdfe5ea, METAL=0x9aa4b0;
+  const glossy={roughness:.3,metalness:.06};
+  const acryl={transparent:true,opacity:.16,roughness:.06,metalness:0};
 
-  /* P4 + bornes */
-  box(2.6,2.2,2.6,0x14181e,-27,2.7,7,'Conector P4 fêmea com borne');
-  box(3.4,1.8,2.2,0xd8dee6,-22,2.5,7.5,'Borne / Wago · +12V');
-  box(3.4,0.5,2.2,0xff7a1a,-22,3.6,7.5,'Borne / Wago · +12V');
-  box(3.4,1.8,2.2,0xd8dee6,-17.8,2.5,7.5,'Borne / Wago · GND');
-  box(3.4,0.5,2.2,0xff7a1a,-17.8,3.6,7.5,'Borne / Wago · GND');
+  /* estrutura */
+  box(1.6,96,50,WHITE,-24.2,49,0,'Painel lateral esquerdo · armário 50 × 50 × 100 cm',glossy);
+  box(1.6,96,50,WHITE, 24.2,49,0,'Painel lateral direito · armário 50 × 50 × 100 cm',glossy);
+  box(50,96,1.6,WHITE,0,49,-24.2,'Painel de fundo (furo p/ o cabo AC da fonte)',glossy);
+  box(1.8,96,1.8,FRAME,-23.6,49,23.6,'Montante frontal esquerdo — lado dos eletroímãs');
+  box(1.8,96,1.8,FRAME, 23.6,49,23.6,'Montante frontal direito — lado das dobradiças');
+  /* tampo de vidro */
+  box(50,2,3.2,FRAME,0,98,23.2,'Moldura do tampo');
+  box(50,2,3.2,FRAME,0,98,-23.2,'Moldura do tampo');
+  box(3.2,2,40,FRAME,-23.4,98,0,'Moldura do tampo');
+  box(3.2,2,40,FRAME, 23.4,98,0,'Moldura do tampo');
+  box(43,0.8,43,0xd7ecf5,0,98,0,'Tampo de vidro',{transparent:true,opacity:.22,roughness:.05,metalness:0});
+  /* prateleiras */
+  box(46.5,1.8,47,WHITE,0,18,-0.5,'Prateleira · piso do compartimento de equipamentos',glossy);
+  box(46.5,1.8,47,WHITE,0,42,-0.5,'Prateleira · piso da vitrine do meio',glossy);
+  box(46.5,1.8,47,WHITE,0,70,-0.5,'Prateleira · piso da vitrine superior',glossy);
 
-  /* LM2596 */
-  box(6,0.4,3.8,0x1b3fae,-24,2.2,-4,'Conversor step-down LM2596 (12V→5V)');
-  cyl(1.1,1.2,0x8b93a1,-25.4,3,-4,'LM2596 · indutor');
-  box(1.1,0.9,1.0,0x2a6fdb,-22.2,2.9,-3,'LM2596 · trimpot de ajuste (5,0V)');
-  box(1.6,0.5,2.4,0x0c0f13,-23.6,2.6,-4.4,'LM2596 · CI regulador');
+  /* ---- portas de acrílico (dobradiça à direita, ímã à esquerda) ---- */
+  function acrylicDoor(cy,hgt,name,ledCy){
+    const g=new THREE.Group();
+    g.position.set(22.7,cy,25.0);
+    scene.add(g);
+    const panel=boxP(g,45.4,hgt,0.7,0xbfe3f2,-22.7,0,0,name+' — clique para abrir/fechar',acryl);
+    boxP(g,1.2,3,1.5,METAL,0.1,hgt*0.32,-0.3,'Dobradiça',{metalness:.65,roughness:.3});
+    boxP(g,1.2,3,1.5,METAL,0.1,-hgt*0.32,-0.3,'Dobradiça',{metalness:.65,roughness:.3});
+    boxP(g,4.6,2.2,0.5,0xb9c2cd,-43.2,0,-0.6,'Contra-placa de aço (parafusada no acrílico)',{metalness:.7,roughness:.3});
+    /* eletroímã fixo no montante esquerdo */
+    box(5,2.6,2.4,0x8f99a5,-20.5,ledCy,23.3,'Eletroímã 12V · '+name,{metalness:.65,roughness:.3});
+    const led=box(0.7,0.7,0.3,0x22c55e,-18.6,ledCy+0.9,24.55,null,{emissive:0x15803d});
+    return {g,led};
+  }
+  const doorTop=acrylicDoor(84,25.5,'Porta 1 · vitrine superior (acrílico)',84);
+  const doorMid=acrylicDoor(56,25.5,'Porta 2 · vitrine do meio (acrílico)',56);
 
-  /* ESP32 */
-  box(5.6,0.4,11,0x14161a,-14,2.2,-1,'ESP32 NodeMCU (30 pinos)');
-  box(3.8,1.0,5,0x9aa7b5,-14,2.9,-3,'ESP32 · blindagem do ESP-WROOM-32');
-  box(2,0.5,1.2,0x39424e,-14,2.6,4.2,'ESP32 · micro-USB');
-  box(0.5,0.5,10.4,0xc9a227,-16.5,2.5,-1,'ESP32 · fileira de pinos (esquerda)');
-  box(0.5,0.5,10.4,0xc9a227,-11.5,2.5,-1,'ESP32 · fileira de pinos (direita: 3V3, GND, GPIO 23/22/21)');
+  /* ---- porta branca (compartimento de equipamentos) + display ---- */
+  const doorW=new THREE.Group();
+  doorW.position.set(22.7,30,25.0);
+  scene.add(doorW);
+  boxP(doorW,45.4,20.5,1.2,WHITE,-22.7,0,0,'Porta branca · compartimento de equipamentos — clique para abrir',glossy);
+  boxP(doorW,1.2,3,1.5,METAL,0.1,6.5,-0.3,'Dobradiça',{metalness:.65,roughness:.3});
+  boxP(doorW,1.2,3,1.5,METAL,0.1,-6.5,-0.3,'Dobradiça',{metalness:.65,roughness:.3});
+  boxP(doorW,1.2,6,1,0xcfd6dd,-43.5,0,1.1,'Puxador',{metalness:.5,roughness:.4});
+  boxP(doorW,11.5,8,1,0x14181e,-7.5,6,1.0,'Display TFT 4.0" SPI — status das portas, Wi-Fi e MQTT',{roughness:.5});
+  boxP(doorW,10,6.6,0.3,0x06131c,-7.5,6,1.6,'Tela 480×320 — PORTA 1 ✓ · PORTA 2 ✓ · GAVETA ✓',{emissive:0x0d3b4f,roughness:.2});
 
-  /* módulo relé */
-  box(9,0.4,9.6,0x1b3fae,-3,2.2,-0.6,'Módulo relé 4 canais (optoacoplado)');
-  const relZ=[-3.9,-1.3,1.3,3.9];
-  relZ.forEach((z,i)=>{
-    box(2.6,1.9,2.2,0x2050b8,-4.2,3.25,z,'Relé canal '+(i+1)+(i<3?' · Porta '+(i+1):' · reserva'));
-    box(1.3,1.5,2.2,0x1c4532,0.6,3.0,z,'Bornes NO/COM/NC · canal '+(i+1));
+  /* ---- gaveta com rodinhas (Porta 3) ---- */
+  const drawer=new THREE.Group();
+  scene.add(drawer);
+  boxP(drawer,45.4,14.5,1.2,WHITE,0,9.5,24.9,'Gaveta com rodinhas · Porta 3 — clique para abrir/fechar',glossy);
+  boxP(drawer,42,1,42,0xf4f6f8,0,3.5,2,'Fundo da gaveta',{roughness:.4});
+  boxP(drawer,42,8,1,WHITE,0,7.5,-19,'Traseira da gaveta',glossy);
+  boxP(drawer,1,8,42,WHITE,-21,7.5,2,'Lateral da gaveta',glossy);
+  boxP(drawer,1,8,42,WHITE, 21,7.5,2,'Lateral da gaveta',glossy);
+  boxP(drawer,4.5,2.4,0.6,0xb9c2cd,0,13,-20.6,'Contra-placa de aço (na traseira da gaveta)',{metalness:.7,roughness:.3});
+  boxP(drawer,1.4,9,1,0xaab4c0,0,11.5,25.9,'Haste do puxador tipo carrinho',{metalness:.7,roughness:.3});
+  boxP(drawer,11,1.6,1.6,0x14181e,0,16.6,25.9,'Puxador tipo carrinho',{roughness:.5});
+  [[-16,-13],[16,-13],[-16,13],[16,13]].forEach((p,i)=>{
+    const w=new THREE.Mesh(new THREE.CylinderGeometry(2,2,1.6,18),mat(0x14181e,{roughness:.6}));
+    w.rotation.z=Math.PI/2;w.position.set(p[0],2,p[1]);
+    if(i===0){w.userData.label='Rodinha da gaveta';pickables.push(w);}
+    drawer.add(w);
   });
-  box(1.6,0.5,1.2,0xc9a227,-6.5,2.6,4.4,'Header JD-VCC (jumper removido → recebe 5V)');
+  /* eletroímã da gaveta, fixo no fundo do vão */
+  box(5,2.6,2.4,0x8f99a5,0,13,-22.2,'Eletroímã 12V · Porta 3 (gaveta) — segura a contra-placa da traseira',{metalness:.65,roughness:.3});
+  const led3=box(0.7,0.7,0.3,0x22c55e,1.8,11.4,-20.9,null,{emissive:0x15803d});
 
-  /* portas + eletroímãs */
-  const doorZ=[-16,0,16];
-  doorZ.forEach((z,i)=>{
-    const n=i+1;
-    box(8,16,0.9,0x5a4030,24,8,z,'Porta '+n);
-    box(10,1.6,2.2,0x333a44,24,17,z,'Batente / suporte do ímã · Porta '+n);
-    box(4.6,1.3,1.7,0xaab4c0,24,15.7,z,'Eletroímã 12V · Porta '+n);
-    box(4.2,0.5,1.3,0xb9c2cd,24,14.8,z,'Contra-placa · Porta '+n);
+  /* ---- equipamentos (compartimento da porta branca, piso y=19) ---- */
+  box(11,3.4,5.4,0x3d454f,-15,20.6,-14,'Fonte chaveada 12V · 3A',{roughness:.6});
+  box(10,0.5,4.6,0x39424e,-15,22.5,-14,'Fonte chaveada 12V · 3A');
+  box(2.6,2,2.6,0x14181e,-19,19.9,8,'Conector P4 fêmea (entrada 12V)');
+  box(3.6,1.6,2.2,0xf2f4f7,-19,19.7,2,'Wago 221 · barramento +12V');
+  box(3.6,0.5,2.2,0xff7a1a,-19,20.75,2,'Wago 221 · +12V (alavancas)');
+  box(3.6,1.6,2.2,0xf2f4f7,-14.5,19.7,2,'Wago 221 · barramento GND');
+  box(3.6,0.5,2.2,0xff7a1a,-14.5,20.75,2,'Wago 221 · GND (alavancas)');
+  box(4.4,0.4,2.2,0x1b3fae,-6,19.1,-14,'Conversor LM2596 · 12V→5V (ajustado em 5,0V)');
+  cyl(0.9,1,0x8b93a1,-7.4,19.7,-14,'LM2596 · indutor toroidal');
+  box(0.9,0.8,0.9,0x2a6fdb,-4.6,19.6,-13.4,'LM2596 · trimpot de ajuste');
+  box(2.9,0.4,5.6,0x14161a,0,19.1,-6,'ESP32 NodeMCU — Wi-Fi, MQTT e display');
+  box(2.0,0.8,2.6,0x9aa7b5,0,19.7,-7.2,'ESP32 · módulo ESP-WROOM-32',{metalness:.5});
+  box(7.8,0.4,5.8,0x1b3fae,8,19.1,-6,'Módulo relé 4 canais (ativo-baixo)');
+  [5.2,7.1,9.0,10.9].forEach((x,i)=>{
+    box(1.6,1.6,2.0,0x2050b8,x,20.1,-7,'Relé canal '+(i+1)+(i<3?' · Porta '+(i+1):' · reserva'));
   });
+  box(7.4,1.2,1.4,0x1c7a3d,8,19.7,-3.4,'Bornes NO/COM/NC dos 4 canais');
 
-  /* fios */
-  wire([[-36,3.4,4.5],[-31,3.2,6],[-28.2,2.9,7]],0x4a5563,'Cabo da fonte (12V) → P4');
-  wire([[-25.8,2.9,7],[-24.6,3.3,7.4],[-23.6,3.1,7.5]],0xff5c5c,'+12V · P4 → borne +12V');
-  wire([[-25.8,2.6,7.6],[-21,3.6,8.6],[-18,3.1,8.2],[-17.8,3.1,7.6]],0x93a0b1,'GND · P4 → borne GND');
-  wire([[-21.5,3.2,6.6],[-23.2,3.8,1.2],[-24.6,2.8,-2.2]],0xff5c5c,'+12V · borne → LM2596 IN+');
-  wire([[-17.5,3.2,6.6],[-20,4.0,0.8],[-23.4,2.8,-2.4]],0x93a0b1,'GND · borne → LM2596 IN−');
-  wire([[-23,2.8,-5.7],[-19,3.8,-6.2],[-15.4,2.8,-5.4]],0xffa94d,'+5V · LM2596 OUT+ → ESP32 VIN');
-  wire([[-24.4,2.8,-5.9],[-14,4.6,-7.4],[-6.4,2.9,-4.6]],0xffa94d,'+5V · LM2596 → relé JD-VCC (bobinas)');
-  wire([[-22.6,2.8,-6.1],[-18.4,3.5,-6.5],[-15,2.7,-5.8]],0x93a0b1,'GND · LM2596 OUT− → ESP32 GND');
-  wire([[-11.3,2.9,3.6],[-9.4,3.7,2.2],[-7.6,2.8,1.4]],0xc084fc,'3V3 · ESP32 → relé VCC (lógica)');
-  wire([[-11.3,2.7,3.0],[-9.6,3.4,1.4],[-7.6,2.6,0.4]],0x93a0b1,'GND · ESP32 → relé GND');
-  wire([[-11.3,2.9,-3.6],[-9.4,3.8,-3.4],[-7.6,2.9,-3.3]],0xffd43b,'Sinal · GPIO23 → IN1 (Porta 1)');
-  wire([[-11.3,2.9,-2.6],[-9.4,3.7,-2.2],[-7.6,2.9,-1.8]],0x69db7c,'Sinal · GPIO22 → IN2 (Porta 2)');
-  wire([[-11.3,2.9,-1.6],[-9.4,3.6,-0.9],[-7.6,2.9,-0.4]],0x4dd4f7,'Sinal · GPIO21 → IN3 (Porta 3)');
-  wire([[-21.5,3.4,7.2],[-10,5.6,8.6],[-1,3.6,5],[1.4,3.2,3.2]],0xff5c5c,'+12V · borne → COM1/COM2/COM3');
-  wire([[1.6,3.2,-3.9],[10,8,-13],[21.6,15.7,-16.6]],0xff8fa3,'Trava 1 · NC1 → eletroímã da Porta 1');
-  wire([[1.6,3.2,-1.3],[11,8,-1],[21.6,15.7,-0.6]],0xf0abfc,'Trava 2 · NC2 → eletroímã da Porta 2');
-  wire([[1.6,3.2,1.3],[11,8,11],[21.6,15.7,15.4]],0xffc078,'Trava 3 · NC3 → eletroímã da Porta 3');
-  doorZ.forEach((z,i)=>{
-    wire([[26.4,15.7,z-0.4],[31,7,z],[31,1.6,8],[6,1.4,10],[-17.6,2.9,8.4]],0x93a0b1,'GND · retorno do ímã '+(i+1)+' → borne GND');
-  });
+  /* produto em exposição (vitrine superior) */
+  const robo=new THREE.Mesh(new THREE.CylinderGeometry(16,16,7,36),mat(0xf2f4f6,{roughness:.35}));
+  robo.position.set(0,74.4,0);robo.userData.label='Produto em exposição · vitrine superior';
+  pickables.push(robo);scene.add(robo);
+  const lidar=new THREE.Mesh(new THREE.CylinderGeometry(4.5,4.5,2.6,24),mat(0xe8ebee,{roughness:.3}));
+  lidar.position.set(0,79.2,0);scene.add(lidar);
+  const lidarTop=new THREE.Mesh(new THREE.CylinderGeometry(3.4,3.4,0.6,24),mat(0x14181e,{roughness:.4}));
+  lidarTop.position.set(0,80.8,0);scene.add(lidarTop);
+
+  /* ---- fiação ---- */
+  wire([[0,3,-40],[0,8,-28],[-8,14,-22],[-15,20.2,-16.6]],0x4a5563,'Cabo AC da fonte — entra por furo no painel de fundo');
+  wire([[-15,20.2,-11.4],[-18.5,20.8,-3],[-19,20.2,0.9]],0xff5c5c,'+12V · fonte/P4 → Wago +12V');
+  wire([[-15,19.9,-11.2],[-16.5,21,-4],[-14.5,20.2,0.9]],0x93a0b1,'GND · fonte/P4 → Wago GND');
+  wire([[-18.8,20.3,1],[-12,21.2,-6],[-6.2,19.5,-12.9]],0xff5c5c,'+12V · Wago → LM2596 IN+');
+  wire([[-14.3,20.3,1],[-10.5,21,-6],[-5.6,19.4,-13.1]],0x93a0b1,'GND · Wago → LM2596 IN−');
+  wire([[-4.9,19.4,-13.8],[-2.5,20.6,-10],[-0.9,19.4,-8.4]],0xffa94d,'+5V · LM2596 OUT+ → ESP32 VIN');
+  wire([[-5,19.4,-14.2],[2,21.4,-11],[6,19.5,-8.6]],0xffa94d,'+5V · LM2596 → relé JD-VCC (jumper removido)');
+  wire([[1.2,19.4,-5],[2.6,20.4,-5.4],[4.4,19.4,-5.6]],0xc084fc,'3V3 · ESP32 → relé VCC (lógica)');
+  wire([[1.2,19.5,-7.4],[2.6,20.6,-7.2],[4.4,19.6,-7]],0xffd43b,'Sinal · GPIO22 → IN1 (Porta 1)');
+  wire([[1.2,19.5,-6.6],[2.6,20.5,-6.4],[4.4,19.6,-6.2]],0x69db7c,'Sinal · GPIO21 → IN2 (Porta 2)');
+  wire([[1.2,19.5,-5.8],[2.6,20.4,-5.9],[4.4,19.6,-5.8]],0x4dd4f7,'Sinal · GPIO16 → IN3 (Porta 3 · gaveta)');
+  wire([[-19,20.4,3],[-6,22.4,4],[10,20.2,-3]],0xff5c5c,'+12V · Wago → COM1/COM2/COM3');
+  wire([[10.5,20,-3.3],[-6,26,10],[-20.6,34,20.8],[-20.6,84,21.6]],0xff8fa3,'Trava 1 · NC1 → eletroímã da vitrine superior');
+  wire([[10,20,-3.3],[-4,25,10],[-19.8,32,20],[-20.6,56,21.6]],0xf0abfc,'Trava 2 · NC2 → eletroímã da vitrine do meio');
+  wire([[11,20,-3.3],[10,18.5,-14],[4,15.5,-20],[1.8,14.2,-20.9]],0xffc078,'Trava 3 · NC3 → eletroímã da gaveta');
+  wire([[-19.5,83,21],[-21.5,45,16],[-16,23,8],[-14.4,20.4,2.9]],0x93a0b1,'GND · retorno do ímã 1 → Wago GND');
+  wire([[-19.5,55,21],[-20.5,36,14],[-15.5,22.5,7],[-14.6,20.4,2.9]],0x93a0b1,'GND · retorno do ímã 2 → Wago GND');
+  wire([[-1.5,13.6,-20.6],[-6,16.5,-12],[-12,20.5,-2],[-14.4,20.2,2.5]],0x93a0b1,'GND · retorno do ímã da gaveta → Wago GND');
+  wire([[1.3,19.6,-4.2],[6,26,8],[13,33,19],[15.2,35.2,23.2]],0x20c997,'Chicote do display · 8 vias (5V, GND e SPI) com laço de folga p/ a porta abrir');
+
+  /* ---- portas interativas (clique) ---- */
+  const state={d1:0,d2:0,db:0,dw:0};
+  const animParts=[
+    {key:'d1',grp:doorTop.g,type:'door',led:doorTop.led},
+    {key:'d2',grp:doorMid.g,type:'door',led:doorMid.led},
+    {key:'db',grp:doorW,type:'door',led:null},
+    {key:'dw',grp:drawer,type:'drawer',led:led3}
+  ];
+  animParts.forEach(p=>{p.cur=0;p.grp.userData.toggle=p.key;});
+  function updateDoors(){
+    animParts.forEach(p=>{
+      p.cur+=(state[p.key]-p.cur)*0.14;
+      if(Math.abs(state[p.key]-p.cur)<0.002)p.cur=state[p.key];
+      if(p.type==='door')p.grp.rotation.y=p.cur*1.35;
+      else p.grp.position.z=p.cur*28;
+      if(p.led){
+        const open=p.cur>0.3;
+        p.led.material.color.setHex(open?0xef4444:0x22c55e);
+        p.led.material.emissive.setHex(open?0x991b1b:0x15803d);
+      }
+    });
+  }
+  function toggleFrom(obj){
+    let o=obj;
+    while(o){
+      if(o.userData&&o.userData.toggle){const k=o.userData.toggle;state[k]=state[k]?0:1;return true;}
+      o=o.parent;
+    }
+    return false;
+  }
 
   /* --------- controles de órbita (custom) --------- */
-  const target=new THREE.Vector3(-2,6,0);
-  let theta=-0.85,phi=1.08,radius=70,interacted=false;
+  const target=new THREE.Vector3(0,48,0);
+  let theta=-0.55,phi=1.15,radius=175,interacted=false,moved=0;
   function applyCamera(){
     phi=Math.max(0.15,Math.min(1.45,phi));
-    radius=Math.max(20,Math.min(160,radius));
+    radius=Math.max(60,Math.min(380,radius));
     camera.position.set(
       target.x+radius*Math.sin(phi)*Math.sin(theta),
       target.y+radius*Math.cos(phi),
@@ -1227,16 +1391,28 @@ function init3D(){
   let lastPinch=0;
   const dom=renderer.domElement;
   dom.style.touchAction='none';
-  dom.addEventListener('pointerdown',e=>{ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});interacted=true;dom.setPointerCapture(e.pointerId);});
-  dom.addEventListener('pointerup',e=>{ptrs.delete(e.pointerId);lastPinch=0;});
+  dom.addEventListener('pointerdown',e=>{ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});interacted=true;moved=0;dom.setPointerCapture(e.pointerId);});
+  dom.addEventListener('pointerup',e=>{
+    ptrs.delete(e.pointerId);lastPinch=0;
+    if(moved<7){
+      const r=dom.getBoundingClientRect();
+      mouse.x=((e.clientX-r.left)/r.width)*2-1;
+      mouse.y=-((e.clientY-r.top)/r.height)*2+1;
+      ray.setFromCamera(mouse,camera);
+      const hits=ray.intersectObjects(pickables,false);
+      if(hits.length)toggleFrom(hits[0].object);
+    }
+  });
   dom.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);lastPinch=0;});
   dom.addEventListener('pointermove',e=>{
     if(ptrs.has(e.pointerId)){
       const p=ptrs.get(e.pointerId);
       if(ptrs.size===1){
+        moved+=Math.abs(e.clientX-p.x)+Math.abs(e.clientY-p.y);
         theta-=(e.clientX-p.x)*0.006;
         phi-=(e.clientY-p.y)*0.005;
       }else if(ptrs.size===2){
+        moved+=3;
         p.x=e.clientX;p.y=e.clientY;
         const arr=[...ptrs.values()];
         const d=Math.hypot(arr[0].x-arr[1].x,arr[0].y-arr[1].y);
@@ -1292,6 +1468,7 @@ function init3D(){
     requestAnimationFrame(loop);
     if(!running)return;
     if(!interacted)theta+=0.0022;
+    updateDoors();
     applyCamera();
     renderer.render(scene,camera);
   }

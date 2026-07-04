@@ -44,4 +44,6 @@ módulo real e para o relé padrão do Wokwi). Na placa real, ajuste apenas
 `WIFI_SSID`, `WIFI_PASS` e, se quiser, o broker.
 
 **Não simulado:** LM2596 (ajuste do trimpot em 5,0 V continua sendo passo
-manual com multímetro), diodos flyback e a parte de potência 12 V.
+manual com multímetro), diodos flyback, a parte de potência 12 V e o
+**display TFT 4" SPI** da porta do armário (pinos 23/18/15/2/4, lib
+TFT_eSPI/LovyanGFX — por isso os relés usam GPIO 22/21/16).

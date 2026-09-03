@@ -25,9 +25,9 @@
     [ "esp:TX0", "$serialMonitor:RX", "", [] ],
     [ "esp:RX0", "$serialMonitor:TX", "", [] ],
 
-    [ "esp:D23", "relay1:IN", "gold", [ "h20" ] ],
-    [ "esp:D22", "relay2:IN", "green", [ "h30" ] ],
-    [ "esp:D21", "relay3:IN", "cyan", [ "h40" ] ],
+    [ "esp:D22", "relay1:IN", "gold", [ "h20" ] ],
+    [ "esp:D21", "relay2:IN", "green", [ "h30" ] ],
+    [ "esp:RX2", "relay3:IN", "cyan", [ "h40" ] ],
 
     [ "esp:VIN", "relay1:VCC", "orange", [ "v-10", "h60" ] ],
     [ "relay1:VCC", "relay2:VCC", "orange", [ "v-8", "h-20" ] ],

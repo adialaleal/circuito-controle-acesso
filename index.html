@@ -20,9 +20,12 @@
     --wgnd:#93a0b1;           /* GND */
     --w5:#ffa94d;             /* +5V */
     --w33:#c084fc;            /* 3V3 */
-    --ws1:#ffd43b;            /* GPIO23 -> IN1 */
-    --ws2:#69db7c;            /* GPIO22 -> IN2 */
-    --ws3:#4dd4f7;            /* GPIO21 -> IN3 */
+    --ws1:#ffd43b;            /* GPIO22 -> IN1 */
+    --ws2:#69db7c;            /* GPIO21 -> IN2 */
+    --ws3:#4dd4f7;            /* GPIO16 -> IN3 */
+    --wdisp:#20c997;          /* barramento SPI do display */
+    --w5m:#f97316;            /* +5V dedicado ao modem (LM2596 #2) */
+    --wlte:#60a5fa;           /* UART + controle do modem A7672SA */
     --wl1:#ff8fa3;            /* NC1 -> ímã 1 */
     --wl2:#f0abfc;            /* NC2 -> ímã 2 */
     --wl3:#ffc078;            /* NC3 -> ímã 3 */
@@ -143,6 +146,8 @@
   }
   .shop-progress{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
   .shop-progress b{color:var(--amber);font-size:15px}
+  .shop-variant{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:8px}
+  .shop-variant b{color:var(--amber);font-weight:600}
   .bar{width:220px;height:6px;border-radius:3px;background:var(--panel2);overflow:hidden;margin-top:6px}
   .bar i{display:block;height:100%;background:var(--amber);width:0%;transition:width .25s}
   .btn-print{
@@ -180,7 +185,8 @@
   }
   .shop-note b{color:var(--amber)}
   @media print{
-    header .tabs,.btn-print,aside,.doc,footer{display:none!important}
+    header .tabs,header .cfg,.btn-print,aside,.doc,footer{display:none!important}
+    .shop-variant{color:#333}.shop-variant b{color:#000}
     body{background:#fff;color:#000}
     #viewList{display:block!important}
     .shop-item{border-color:#ccc;background:#fff;break-inside:avoid}
@@ -241,18 +247,96 @@
   @media (prefers-reduced-motion: reduce){
     .wire,.comp,.halo{transition:none}
   }
+
+  /* ---------- configurador da montagem ---------- */
+  .cfg{
+    margin-top:14px;display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;
+  }
+  .cfg .grp{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .cfg .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .seg{display:inline-flex;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:3px;gap:3px}
+  .seg button{
+    font-family:var(--mono);font-size:12px;background:transparent;color:var(--muted);
+    border:0;border-radius:6px;padding:6px 11px;cursor:pointer;transition:.15s;
+  }
+  .seg button:hover{color:var(--ink)}
+  .seg button.on{background:#22160a;color:var(--amber);box-shadow:inset 0 0 0 1px #7a5516}
+  .seg button:disabled{opacity:.35;cursor:not-allowed}
+  .seg button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  .cfg .hint{flex-basis:100%;margin:0;font-size:12px;color:var(--muted);line-height:1.5}
+  .cfg .hint b{color:var(--amber);font-weight:600}
+
+  /* elementos opcionais — escondidos conforme a configuração (classes no <body>) */
+  .no-tft [data-opt="tft"],.no-notft [data-opt="notft"],
+  .no-lte [data-opt="lte"],.no-nolte [data-opt="nolte"],
+  .no-wifi [data-opt="wifi"],.no-dual [data-opt="dual"],.no-lteonly [data-opt="lteonly"],
+  .no-ap [data-opt="ap"],.no-noap [data-opt="noap"],.no-radio [data-opt="radio"]{display:none!important}
+
+  /* ficha da configuração (aside) */
+  .cfgcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .cfgcard h3{margin:0 0 8px;font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+  .cfgcard dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:12.5px}
+  .cfgcard dt{color:var(--muted);font-family:var(--mono);font-size:11px;white-space:nowrap;padding-top:1px}
+  .cfgcard dd{margin:0;color:var(--ink)}
+  .cfgcard pre{
+    margin:10px 0 0;background:var(--panel2);border:1px solid var(--line);border-radius:8px;
+    padding:8px 10px;font-family:var(--mono);font-size:11.5px;color:#ffd58a;overflow:auto;
+  }
+  .cfgcard .copy{
+    margin-top:8px;font-family:var(--mono);font-size:11px;background:transparent;color:var(--muted);
+    border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer;
+  }
+  .cfgcard .copy:hover{color:var(--ink);border-color:#3a4552}
+
+  /* ondas de rádio (Wi-Fi da casa / hotspot) no esquema */
+  @keyframes wifiPulse{0%{opacity:.12}45%{opacity:1}100%{opacity:.12}}
+  .wave{fill:none;stroke-width:2.4;stroke-linecap:round;animation:wifiPulse 2.6s ease-in-out infinite}
+  .wave:nth-child(2){animation-delay:.35s}.wave:nth-child(3){animation-delay:.7s}
+  @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:.15}}
+  .blink{animation:blink 1.2s steps(1) infinite}
+  @media (prefers-reduced-motion: reduce){.wave,.blink{animation:none}}
+
+  footer{
+    padding:18px 22px 40px;border-top:1px solid var(--line);color:var(--muted);
+    font-size:12px;font-family:var(--mono);max-width:1500px;margin:0 auto;
+  }
+  footer a{color:var(--amber);text-decoration:none}
 </style>
 </head>
 <body>
 <header>
   <div class="eyebrow">Projeto · Automação de acesso</div>
   <h1>Controle remoto de 3 portas — ESP32 + Relé + Eletroímãs 12V (MQTT)</h1>
-  <p>Esquema interativo da montagem. Passe o mouse (ou toque) em qualquer componente ou fio para
-     destacar a rede elétrica inteira e ler os detalhes no inspetor ao lado. Clique para fixar a seleção.</p>
+  <p>Montagem no armário-vitrine de <b>1,00m × 50 × 50cm</b>: duas portas de acrílico e a gaveta com
+     rodinhas travadas por eletroímã, equipamentos atrás da porta branca<span data-opt="tft"> e tela TFT 4"
+     de status na frente</span>. <span id="hero-net"></span>
+     Passe o mouse (ou toque) em qualquer componente ou fio para destacar a rede elétrica inteira e ler
+     os detalhes no inspetor ao lado. Clique para fixar a seleção.</p>
   <div class="tabs" role="tablist">
     <button class="tab on" id="tab2d" role="tab" aria-selected="true">Esquema 2D</button>
     <button class="tab" id="tab3d" role="tab" aria-selected="false">Montagem 3D</button>
     <button class="tab" id="tabList" role="tab" aria-selected="false">Lista de compras</button>
+  </div>
+  <div class="cfg" id="cfg" role="group" aria-label="Configuração da montagem">
+    <div class="grp"><span class="lbl">Tela TFT 4"</span>
+      <div class="seg" data-key="tft">
+        <button data-val="1">com tela</button><button data-val="0">sem tela</button>
+      </div>
+    </div>
+    <div class="grp"><span class="lbl">Rede</span>
+      <div class="seg" data-key="net">
+        <button data-val="wifi">Wi-Fi da casa</button>
+        <button data-val="dual">Wi-Fi + 4G reserva</button>
+        <button data-val="lte">Só 4G (A7672SA)</button>
+      </div>
+    </div>
+    <div class="grp"><span class="lbl">Hotspot da ESP32</span>
+      <div class="seg" data-key="ap">
+        <button data-val="0">desligado</button><button data-val="1">ligado</button>
+      </div>
+    </div>
+    <p class="hint" id="cfg-hint"></p>
   </div>
 </header>
 
@@ -260,7 +344,7 @@
 <div class="stage">
   <div>
     <div id="view2d" class="canvas-wrap">
-      <svg id="schematic" viewBox="0 0 1560 1000" xmlns="http://www.w3.org/2000/svg" aria-label="Esquema elétrico do controle de acesso">
+      <svg id="schematic" viewBox="0 0 1560 1210" xmlns="http://www.w3.org/2000/svg" aria-label="Esquema elétrico do controle de acesso">
         <defs>
           <linearGradient id="gBlk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#24272d"/><stop offset=".5" stop-color="#17191e"/><stop offset="1" stop-color="#0f1115"/></linearGradient>
           <linearGradient id="gBlu" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d4cd0"/><stop offset=".55" stop-color="#173fb2"/><stop offset="1" stop-color="#122e88"/></linearGradient>
@@ -302,10 +386,32 @@
           <!-- 3V3 -->
           <path class="wire" data-net="3v3" stroke="var(--w33)" d="M772,770 H800 V580 H888"/>
 
-          <!-- sinais -->
-          <path class="wire" data-net="sig1" stroke="var(--ws1)" d="M772,350 H826 V420 H888"/>
-          <path class="wire" data-net="sig2" stroke="var(--ws2)" d="M772,380 H840 V460 H888"/>
-          <path class="wire" data-net="sig3" stroke="var(--ws3)" d="M772,470 H854 V500 H888"/>
+          <!-- sinais (relés) -->
+          <path class="wire" data-net="sig1" stroke="var(--ws1)" d="M772,380 H832 V420 H888"/>
+          <path class="wire" data-net="sig2" stroke="var(--ws2)" d="M772,470 H846 V460 H888"/>
+          <path class="wire" data-net="sig3" stroke="var(--ws3)" d="M772,620 H860 V500 H888"/>
+
+          <!-- display TFT 4" SPI (opcional) -->
+          <path class="wire" data-opt="tft" data-net="5v"   stroke="var(--w5)"    d="M700,860 V1012 H513"/>
+          <path class="wire" data-opt="tft" data-net="gnd"  stroke="var(--wgnd)"  d="M660,960 V1030 H513"/>
+          <path class="wire" data-opt="tft" data-net="disp" stroke="var(--wdisp)" d="M772,710 H786 V1048 H513"/>
+          <path class="wire" data-opt="tft" data-net="disp" stroke="var(--wdisp)" d="M772,650 H796 V1066 H513"/>
+          <path class="wire" data-opt="tft" data-net="disp" stroke="var(--wdisp)" d="M772,680 H806 V1084 H513"/>
+          <path class="wire" data-opt="tft" data-net="disp" stroke="var(--wdisp)" d="M772,350 H820 V1102 H513"/>
+          <path class="wire" data-opt="tft" data-net="disp" stroke="var(--wdisp)" d="M772,530 H826 V1120 H513"/>
+          <path class="wire" data-opt="tft" data-net="3v3"  stroke="var(--w33)"   d="M780,770 V1138 H513"/>
+
+          <!-- modem 4G A7672SA (opcional): LM2596 #2 → capacitor → modem → UART1 do ESP32 -->
+          <path class="wire" data-opt="lte" data-net="12v" stroke="var(--w12)"  d="M340,210 V250"/>
+          <path class="wire" data-opt="lte" data-net="gnd" stroke="var(--wgnd)" d="M400,230 V250"/>
+          <path class="wire" data-opt="lte" data-net="5vm" stroke="var(--w5m)"  d="M340,380 V470"/>
+          <path class="wire" data-opt="lte" data-net="gnd" stroke="var(--wgnd)" d="M400,380 V470"/>
+          <path class="wire" data-opt="lte" data-net="5vm" stroke="var(--w5m)"  d="M340,420 H356"/>
+          <path class="wire" data-opt="lte" data-net="gnd" stroke="var(--wgnd)" d="M384,420 H400"/>
+          <path class="wire" data-opt="lte" data-net="lte" stroke="var(--wlte)" d="M475,530 H544"/>
+          <path class="wire" data-opt="lte" data-net="lte" stroke="var(--wlte)" d="M475,560 H544"/>
+          <path class="wire" data-opt="lte" data-net="lte" stroke="var(--wlte)" d="M475,590 H544"/>
+          <path class="wire" data-opt="lte" data-net="lte" stroke="var(--wlte)" d="M475,620 H544"/>
 
           <!-- travas (12V chaveado pelo contato NC) -->
           <path class="wire" data-net="lock1" stroke="var(--wl1)" d="M1192,420 H1240 V320 H1340"/>
@@ -326,6 +432,13 @@
           <circle class="dot" data-net="gnd" cx="1318" cy="355" r="4.5" fill="var(--wgnd)"/>
           <circle class="dot" data-net="gnd" cx="1318" cy="515" r="4.5" fill="var(--wgnd)"/>
           <circle class="dot" data-net="gnd" cx="1318" cy="675" r="4.5" fill="var(--wgnd)"/>
+          <circle class="dot" data-opt="tft" data-net="5v"  cx="700"  cy="860" r="4.5" fill="var(--w5)"/>
+          <circle class="dot" data-opt="tft" data-net="gnd" cx="660"  cy="960" r="4.5" fill="var(--wgnd)"/>
+          <circle class="dot" data-opt="tft" data-net="3v3" cx="780"  cy="770" r="4.5" fill="var(--w33)"/>
+          <circle class="dot" data-opt="lte" data-net="12v" cx="340"  cy="210" r="4.5" fill="var(--w12)"/>
+          <circle class="dot" data-opt="lte" data-net="gnd" cx="400"  cy="230" r="4.5" fill="var(--wgnd)"/>
+          <circle class="dot" data-opt="lte" data-net="5vm" cx="340"  cy="420" r="4.5" fill="var(--w5m)"/>
+          <circle class="dot" data-opt="lte" data-net="gnd" cx="400"  cy="420" r="4.5" fill="var(--wgnd)"/>
         </g>
 
         <!-- rótulos de rede -->
@@ -333,9 +446,41 @@
           <text class="netlabel" x="900" y="28" fill="var(--w12)">barramento +12V</text>
           <text class="netlabel" x="900" y="952" fill="var(--wgnd)">barramento GND (0V)</text>
           <text class="netlabel" x="300" y="852" fill="var(--w5)">+5V (saída do LM2596)</text>
-          <text class="netlabel" x="806" y="336" fill="var(--ws1)">GPIO23→IN1</text>
-          <text class="netlabel" x="820" y="406" fill="var(--ws2)">GPIO22→IN2</text>
-          <text class="netlabel" x="834" y="456" fill="var(--ws3)">GPIO21→IN3</text>
+          <text class="netlabel" x="806" y="372" fill="var(--ws1)">GPIO22→IN1</text>
+          <text class="netlabel" x="852" y="446" fill="var(--ws2)">GPIO21→IN2</text>
+          <text class="netlabel" x="866" y="612" fill="var(--ws3)">GPIO16→IN3</text>
+          <text class="netlabel" data-opt="tft" x="840" y="990" fill="var(--wdisp)">SPI do display · 5 fios</text>
+          <text class="netlabel" data-opt="lte" x="483" y="522" fill="var(--wlte)">UART1 · 3,3V</text>
+          <text class="netlabel" data-opt="lte" x="348" y="398" fill="var(--w5m)">+5V só do modem</text>
+        </g>
+
+        <!-- ================= STATUS DE REDE (acima da antena do ESP32) ================= -->
+        <g id="netstatus">
+          <g id="net-waves" data-opt="radio" stroke="#38bdf8">
+            <path class="wave" d="M680.1,290.1 A14,14 0 0 1 699.9,290.1"/>
+            <path class="wave" d="M671.6,281.6 A26,26 0 0 1 708.4,281.6"/>
+            <path class="wave" d="M663.1,273.1 A38,38 0 0 1 716.9,273.1"/>
+          </g>
+          <g data-opt="wifi">
+            <line x1="744" y1="232" x2="740" y2="214" stroke="#8a94a3" stroke-width="2" stroke-linecap="round"/>
+            <line x1="784" y1="232" x2="788" y2="214" stroke="#8a94a3" stroke-width="2" stroke-linecap="round"/>
+            <rect x="736" y="232" width="56" height="16" rx="4" fill="#20262e" stroke="#59636f" stroke-width="1.2"/>
+            <circle cx="745" cy="240" r="2" fill="#57e389"/><circle cx="753" cy="240" r="2" fill="#57e389"/><circle cx="761" cy="240" r="2" fill="#ffb224"/>
+          </g>
+          <g data-opt="ap">
+            <rect x="748" y="210" width="22" height="40" rx="4" fill="#0f1318" stroke="#59636f" stroke-width="1.2"/>
+            <rect x="751" y="215" width="16" height="27" rx="1.5" fill="#13324a"/>
+            <circle cx="759" cy="246" r="1.6" fill="#8a94a3"/>
+            <text x="759" y="232" font-size="7" fill="var(--amber)" font-family="var(--mono)" text-anchor="middle">ABRIR</text>
+          </g>
+          <g data-opt="lteonly"><g data-opt="noap">
+            <line x1="760" y1="250" x2="760" y2="214" stroke="#8a94a3" stroke-width="2.4" stroke-linecap="round"/>
+            <line x1="752" y1="250" x2="760" y2="226" stroke="#8a94a3" stroke-width="1.4"/><line x1="768" y1="250" x2="760" y2="226" stroke="#8a94a3" stroke-width="1.4"/>
+            <circle cx="760" cy="212" r="2.4" fill="#ff5148"/>
+            <path d="M750,222 A12,12 0 0 1 770,222 M746,218 A17,17 0 0 1 774,218" fill="none" stroke="#60a5fa" stroke-width="1.6" stroke-linecap="round"/>
+          </g></g>
+          <text id="net-label" class="netlabel" x="742" y="266" fill="#38bdf8"></text>
+          <text id="net-label2" class="netlabel" x="742" y="280" font-size="9" fill="var(--muted)"></text>
         </g>
 
         <!-- ================= FONTE 12V ================= -->
@@ -345,9 +490,9 @@
           <rect x="48" y="66" width="164" height="9" rx="4.5" fill="#333942" opacity=".8"/>
           <circle cx="204" cy="70.5" r="3" fill="#57e389"/>
           <rect x="54" y="84" width="132" height="62" rx="4" fill="#eceff2" stroke="#c3cad2"/>
-          <text x="62" y="102" font-size="13" font-weight="800" fill="#14181e" font-family="var(--mono)">12V ⎓ 2A</text>
+          <text id="fonte-rating" x="62" y="102" font-size="13" font-weight="800" fill="#14181e" font-family="var(--mono)">12V ⎓ 3A</text>
           <text x="62" y="118" font-size="7.5" fill="#4a525c" font-family="var(--mono)">ENTRADA 100–240V~ 50/60Hz</text>
-          <text x="62" y="130" font-size="7.5" fill="#4a525c" font-family="var(--mono)">SAÍDA 12V DC · 24W máx</text>
+          <text id="fonte-out" x="62" y="130" font-size="7.5" fill="#4a525c" font-family="var(--mono)">SAÍDA 12V DC · 36W máx</text>
           <text x="62" y="142" font-size="7.5" fill="#4a525c" font-family="var(--mono)">plugue P4 · 5,5×2,1mm</text>
           <rect x="214" y="118" width="12" height="14" rx="5" fill="#0c0f13" stroke="#2c3138"/>
           <rect x="286" y="112" width="16" height="26" rx="3" fill="#14181e" stroke="#3d434c"/>
@@ -418,6 +563,102 @@
           <line x1="230.5" y1="311.5" x2="237.5" y2="318.5" stroke="#7c5f10" stroke-width="1.6"/>
           <text class="silk" x="178" y="447" font-size="10">LM2596 · 12V→5V</text>
           <text x="188" y="296" font-size="9" fill="var(--amber)" font-family="var(--mono)">⚠ ajustar p/ 5,0V</text>
+        </g>
+
+        <!-- ================= LM2596 #2 · SÓ DO MODEM (opcional) ================= -->
+        <g class="comp" data-id="lm2596b" data-opt="lte">
+          <rect class="halo" x="290" y="240" width="200" height="150" rx="10"/>
+          <rect class="board-blu" x="300" y="250" width="180" height="130" rx="7"/>
+          <circle class="screw" cx="340" cy="264" r="7"/><line x1="340" y1="250" x2="340" y2="257" stroke="#c9a227" stroke-width="3"/>
+          <circle class="screw" cx="400" cy="264" r="7"/><line x1="400" y1="250" x2="400" y2="257" stroke="#c9a227" stroke-width="3"/>
+          <circle class="screw" cx="340" cy="366" r="7"/><line x1="340" y1="373" x2="340" y2="380" stroke="#c9a227" stroke-width="3"/>
+          <circle class="screw" cx="400" cy="366" r="7"/><line x1="400" y1="373" x2="400" y2="380" stroke="#c9a227" stroke-width="3"/>
+          <text class="silk" x="322" y="286" font-size="9">IN+</text>
+          <text class="silk" x="384" y="286" font-size="9">IN−</text>
+          <text class="silk" x="318" y="354" font-size="9">OUT+</text>
+          <text class="silk" x="382" y="354" font-size="9">OUT−</text>
+          <circle cx="452" cy="316" r="17" fill="url(#gToro)" stroke="#5e441a" stroke-width="1.5"/>
+          <g stroke="#e4c98a" stroke-width="2.4" fill="none" opacity=".9">
+            <path d="M438,307 L448,301"/><path d="M436,315 L446,312"/><path d="M436,323 L446,324"/><path d="M439,331 L448,333"/><path d="M458,300 L466,306"/><path d="M464,329 L457,334"/>
+          </g>
+          <circle cx="452" cy="316" r="6" fill="#141313" stroke="#5e441a"/>
+          <rect x="338" y="298" width="44" height="7" rx="1.5" fill="#aeb9c6" stroke="#7c8894" stroke-width=".8"/>
+          <rect x="338" y="305" width="44" height="20" rx="2" fill="#0c0e12" stroke="#000"/>
+          <text x="342" y="318" font-size="7.5" fill="#cfd6dd" font-family="var(--mono)">LM2596S</text>
+          <circle cx="316" cy="316" r="10" fill="url(#gCap)" stroke="#8e9aa8" stroke-width="2"/>
+          <path d="M312,312 L320,320 M320,312 L312,320" stroke="#39404a" stroke-width="1.3"/>
+          <rect x="452" y="252" width="22" height="20" rx="3" fill="#2a6fdb" stroke="#6ea1f0"/>
+          <circle cx="463" cy="262" r="5.5" fill="#c9a227" stroke="#8a6d12" stroke-width="1.2"/>
+          <line x1="459.5" y1="258.5" x2="466.5" y2="265.5" stroke="#7c5f10" stroke-width="1.5"/>
+          <text class="silk" x="306" y="340" font-size="9">LM2596 #2 · só p/ o modem</text>
+          <text x="404" y="246" font-size="8.5" fill="var(--amber)" font-family="var(--mono)">⚠ ajustar p/ 5,0V</text>
+        </g>
+
+        <!-- ================= CAPACITOR 1000µF · VIN DO MODEM (opcional) ================= -->
+        <g class="comp" data-id="cap" data-opt="lte">
+          <rect class="halo" x="350" y="398" width="40" height="44" rx="6"/>
+          <rect x="356" y="404" width="28" height="32" rx="4" fill="#1e3a5f" stroke="#0f2745" stroke-width="1"/>
+          <rect x="375" y="404" width="7" height="32" rx="2" fill="#dfe6ee" opacity=".85"/>
+          <text x="380" y="428" font-size="8" font-weight="700" fill="#0f2745" font-family="var(--mono)" text-anchor="middle">−</text>
+          <text x="360" y="416" font-size="6.5" fill="#dfe6ee" font-family="var(--mono)">1000µ</text>
+          <text x="360" y="425" font-size="6.5" fill="#dfe6ee" font-family="var(--mono)">16V</text>
+        </g>
+
+        <!-- ================= MODEM 4G LTE · A7672SA (opcional) ================= -->
+        <g class="comp" data-id="modem" data-opt="lte">
+          <rect class="halo" x="212" y="462" width="266" height="236" rx="10"/>
+          <rect class="board" x="220" y="470" width="250" height="220"/>
+          <!-- pinos superiores: VIN / GND -->
+          <rect x="335.5" y="466" width="9" height="9" class="pin-sq" stroke="var(--w5m)" stroke-width="2"/>
+          <rect x="395.5" y="466" width="9" height="9" class="pin-sq" stroke="var(--wgnd)" stroke-width="2"/>
+          <text x="340" y="489" font-size="9" class="silk-dim" text-anchor="middle" fill="var(--w5m)" font-weight="700">VIN 5V</text>
+          <text x="400" y="489" font-size="9" class="silk-dim" text-anchor="middle" fill="var(--wgnd)" font-weight="700">GND</text>
+          <!-- título -->
+          <text class="silk" x="228" y="508" font-size="11">A7672SA · MODEM 4G LTE Cat.1</text>
+          <text class="silk-dim" x="228" y="520" font-size="8">SIMCom · AT por UART · entrada 5V/2A · lógica 3,3V</text>
+          <!-- slot SIM -->
+          <rect x="228" y="530" width="54" height="64" rx="3" fill="#2a3138" stroke="#4a5563" stroke-width="1"/>
+          <rect x="236" y="538" width="38" height="48" rx="3" fill="#d9b64a" stroke="#a8862b"/>
+          <rect x="242" y="548" width="26" height="22" rx="2" fill="#c9a227" stroke="#8a6d12"/>
+          <path d="M242,555 H268 M242,562 H268 M251,548 V570 M259,548 V570" stroke="#8a6d12" stroke-width=".8"/>
+          <text class="silk-dim" x="230" y="606" font-size="7">NANO SIM · dados</text>
+          <!-- módulo blindado -->
+          <rect x="296" y="530" width="118" height="82" rx="4" fill="url(#gShield)" stroke="#7c8894" stroke-width="1.2"/>
+          <rect x="296" y="530" width="118" height="22" rx="4" fill="#ffffff" opacity=".18"/>
+          <text x="306" y="552" font-size="11" font-weight="700" fill="#2e353e" font-family="var(--mono)">SIMCom</text>
+          <text x="306" y="566" font-size="8" fill="#3d4650" font-family="var(--mono)">A7672SA-FASE</text>
+          <text x="306" y="578" font-size="6.5" fill="#5a6470" font-family="var(--mono)">LTE Cat.1 · 4G / 3G / 2G</text>
+          <text x="306" y="589" font-size="6.5" fill="#5a6470" font-family="var(--mono)">B1/B3/B5/B7/B8/B28 (BR)</text>
+          <text x="306" y="602" font-size="6" fill="#6b7581" font-family="var(--mono)">IMEI 86xxxxxxxxxxxxx</text>
+          <!-- conversor de nível -->
+          <rect x="426" y="640" width="30" height="13" rx="2" fill="#0c0e12" stroke="#2c3138"/>
+          <text x="428" y="649" font-size="5.5" fill="#8d97a2" font-family="var(--mono)">TXS0108</text>
+          <text class="silk-dim" x="396" y="666" font-size="6.5">nível 1,8V↔3,3V</text>
+          <!-- LEDs -->
+          <rect x="232" y="636" width="9" height="6" rx="1" fill="#ff5148"/><circle cx="236.5" cy="639" r="6" fill="#ff5148" opacity=".25"/>
+          <text class="silk-dim" x="246" y="642" font-size="7">PWR</text>
+          <rect class="blink" x="232" y="652" width="9" height="6" rx="1" fill="#3b82f6"/><circle class="blink" cx="236.5" cy="655" r="6" fill="#3b82f6" opacity=".25"/>
+          <text class="silk-dim" x="246" y="658" font-size="7">NET (pisca = registrado)</text>
+          <!-- conector de antena -->
+          <circle cx="300" cy="676" r="5.5" fill="#c9a227" stroke="#8a6d12" stroke-width="1.2"/>
+          <circle cx="300" cy="676" r="2" fill="#14181e"/>
+          <text class="silk-dim" x="310" y="679" font-size="7">ANT · IPEX (u.FL)</text>
+          <!-- pinos laterais: RST / PWRKEY / TXD / RXD -->
+          <rect x="466" y="525.5" width="9" height="9" class="pin-sq" stroke="var(--wlte)" stroke-width="2"/><text x="460" y="533.5" font-size="9" class="silk-dim" text-anchor="end" fill="var(--wlte)" font-weight="700">RST</text>
+          <rect x="466" y="555.5" width="9" height="9" class="pin-sq" stroke="var(--wlte)" stroke-width="2"/><text x="460" y="563.5" font-size="9" class="silk-dim" text-anchor="end" fill="var(--wlte)" font-weight="700">PWRKEY</text>
+          <rect x="466" y="585.5" width="9" height="9" class="pin-sq" stroke="var(--wlte)" stroke-width="2"/><text x="460" y="593.5" font-size="9" class="silk-dim" text-anchor="end" fill="var(--wlte)" font-weight="700">TXD</text>
+          <rect x="466" y="615.5" width="9" height="9" class="pin-sq" stroke="var(--wlte)" stroke-width="2"/><text x="460" y="623.5" font-size="9" class="silk-dim" text-anchor="end" fill="var(--wlte)" font-weight="700">RXD</text>
+        </g>
+
+        <!-- ================= ANTENA LTE FPC (opcional) ================= -->
+        <g class="comp" data-id="antena" data-opt="lte">
+          <rect class="halo" x="212" y="702" width="266" height="62" rx="10"/>
+          <line x1="300" y1="682" x2="300" y2="716" stroke="#0c0f13" stroke-width="3" stroke-linecap="round"/>
+          <line x1="300" y1="682" x2="300" y2="716" stroke="#3a3f47" stroke-width="1"/>
+          <rect x="222" y="716" width="246" height="28" rx="3" fill="#1c1f24" stroke="#3a3f47" stroke-width="1"/>
+          <rect x="296" y="712" width="8" height="8" rx="1.5" fill="#c9a227" stroke="#8a6d12"/>
+          <path d="M232,730 h28 v-8 h12 v16 h12 v-16 h12 v16 h12 v-16 h12 v16 h12 v-16 h12 v16 h12 v-16 h12 v16 h12 v-16 h12 v16 h12 v-8 h28" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+          <text class="silk-dim" x="222" y="757" font-size="8">ANTENA LTE 4G · FPC adesiva 700–2700MHz · cabo IPEX 15cm · colada no painel de fundo</text>
         </g>
 
         <!-- ================= ESP32 ================= -->
@@ -553,12 +794,45 @@
           <circle cx="1440" cy="720" r="3.4" fill="#565f6a" stroke="#3d454e"/>
           <text class="silk-dim" x="1382" y="738" font-size="8">contra-placa (na porta)</text>
         </g>
+
+        <!-- ================= DISPLAY TFT 4" SPI (opcional) ================= -->
+        <g class="comp" data-id="display" data-opt="tft">
+          <rect class="halo" x="222" y="982" width="312" height="216" rx="10"/>
+          <rect x="232" y="992" width="292" height="196" rx="8" fill="#7c1f1f" stroke="#a54242" stroke-width="1.5"/>
+          <circle class="screw" cx="244" cy="1004" r="5"/><circle class="screw" cx="244" cy="1176" r="5"/>
+          <circle class="screw" cx="470" cy="1004" r="5"/><circle class="screw" cx="470" cy="1176" r="5"/>
+          <rect x="250" y="1012" width="212" height="150" rx="3" fill="#04070c" stroke="#000"/>
+          <rect x="258" y="1020" width="196" height="134" rx="2" fill="#071018"/>
+          <text x="268" y="1042" font-size="11" font-weight="700" fill="#20c997" font-family="var(--mono)">CONTROLE DE ACESSO</text>
+          <line x1="268" y1="1050" x2="446" y2="1050" stroke="#123a2e" stroke-width="1"/>
+          <circle cx="273" cy="1061" r="4" fill="#69db7c"/>
+          <text x="284" y="1065" font-size="9" fill="#c8d1dc" font-family="var(--mono)">PORTA 1 · vitrine sup.</text>
+          <text x="446" y="1065" font-size="8.5" font-weight="700" fill="#69db7c" font-family="var(--mono)" text-anchor="end">TRANCADA</text>
+          <circle cx="273" cy="1087" r="4" fill="#69db7c"/>
+          <text x="284" y="1091" font-size="9" fill="#c8d1dc" font-family="var(--mono)">PORTA 2 · vitrine meio</text>
+          <text x="446" y="1091" font-size="8.5" font-weight="700" fill="#69db7c" font-family="var(--mono)" text-anchor="end">TRANCADA</text>
+          <circle cx="273" cy="1113" r="4" fill="#ffb224"/>
+          <text x="284" y="1117" font-size="9" fill="#c8d1dc" font-family="var(--mono)">PORTA 3 · gaveta</text>
+          <text x="446" y="1117" font-size="8.5" font-weight="700" fill="#ffb224" font-family="var(--mono)" text-anchor="end">ABERTA · 2s</text>
+          <text x="268" y="1146" font-size="8" fill="#5f7d99" font-family="var(--mono)"><tspan data-opt="wifi">Wi-Fi ✔</tspan><tspan data-opt="lteonly">4G ✔ −87dBm</tspan> · MQTT ✔ · fonte 12,1V</text>
+          <!-- pinos -->
+          <rect x="509" y="1007.5" width="9" height="9" class="pin-sq" stroke="var(--w5)" stroke-width="2"/><text x="503" y="1016" font-size="9" class="silk-dim" text-anchor="end" fill="var(--w5)" font-weight="700">VCC</text>
+          <rect x="509" y="1025.5" width="9" height="9" class="pin-sq" stroke="var(--wgnd)" stroke-width="2"/><text x="503" y="1034" font-size="9" class="silk-dim" text-anchor="end" fill="var(--wgnd)" font-weight="700">GND</text>
+          <rect x="509" y="1043.5" width="9" height="9" class="pin-sq" stroke="var(--wdisp)" stroke-width="2"/><text x="503" y="1052" font-size="9" class="silk-dim" text-anchor="end" fill="var(--wdisp)" font-weight="700">CS</text>
+          <rect x="509" y="1061.5" width="9" height="9" class="pin-sq" stroke="var(--wdisp)" stroke-width="2"/><text x="503" y="1070" font-size="9" class="silk-dim" text-anchor="end" fill="var(--wdisp)" font-weight="700">RESET</text>
+          <rect x="509" y="1079.5" width="9" height="9" class="pin-sq" stroke="var(--wdisp)" stroke-width="2"/><text x="503" y="1088" font-size="9" class="silk-dim" text-anchor="end" fill="var(--wdisp)" font-weight="700">DC</text>
+          <rect x="509" y="1097.5" width="9" height="9" class="pin-sq" stroke="var(--wdisp)" stroke-width="2"/><text x="503" y="1106" font-size="9" class="silk-dim" text-anchor="end" fill="var(--wdisp)" font-weight="700">SDI</text>
+          <rect x="509" y="1115.5" width="9" height="9" class="pin-sq" stroke="var(--wdisp)" stroke-width="2"/><text x="503" y="1124" font-size="9" class="silk-dim" text-anchor="end" fill="var(--wdisp)" font-weight="700">SCK</text>
+          <rect x="509" y="1133.5" width="9" height="9" class="pin-sq" stroke="var(--w33)" stroke-width="2"/><text x="503" y="1142" font-size="9" class="silk-dim" text-anchor="end" fill="var(--w33)" font-weight="700">LED</text>
+          <rect x="509" y="1151.5" width="9" height="9" class="pin-sq"/><text x="503" y="1160" font-size="9" class="silk-dim" text-anchor="end">SDO ·s/uso</text>
+          <text class="silk-dim" x="232" y="1204" font-size="10">TFT 4.0" SPI · ST7796S/ILI9488 · 480×320 · na porta do armário</text>
+        </g>
       </svg>
     </div>
 
     <div id="view3d">
       <div id="three-wrap">
-        <div id="hint3d">arraste para girar · scroll/pinça para zoom · passe o mouse nos componentes</div>
+        <div id="hint3d">arraste para girar · scroll/pinça para zoom · clique nas portas e na gaveta para abrir/fechar</div>
         <div id="label3d"></div>
       </div>
     </div>
@@ -571,6 +845,12 @@
       <p class="desc" id="insp-desc">Cada componente e cada fio mostram aqui sua função e as conexões exatas, pino a pino.</p>
       <ul id="insp-list"></ul>
       <div class="pinned-note">seleção fixada — clique de novo (ou Esc) para soltar</div>
+    </div>
+    <div class="cfgcard" id="cfgcard">
+      <h3>Ficha da configuração</h3>
+      <dl id="cfg-dl"></dl>
+      <pre id="cfg-flags"></pre>
+      <button class="copy" id="cfg-copy" type="button">copiar flags do firmware</button>
     </div>
     <div class="legend" id="legend">
       <h3>Redes elétricas (fios)</h3>
@@ -585,8 +865,9 @@
 <div id="viewList">
   <div class="shop-head">
     <div>
-      <div class="shop-progress">Comprados: <b id="shop-count">0/13</b> itens</div>
+      <div class="shop-progress">Comprados: <b id="shop-count">0/0</b> itens</div>
       <div class="bar"><i id="shop-bar"></i></div>
+      <div class="shop-variant" id="shop-variant"></div>
     </div>
     <button class="btn-print" onclick="window.print()">🖨 imprimir / salvar PDF</button>
   </div>
@@ -615,6 +896,18 @@
   <div id="grp-consumiveis"></div>
   </div>
 
+  <div class="shop-group" data-group="lte" data-opt="lte">
+    <h3>05 · Conectividade 4G <span style="color:var(--muted);font-weight:400">(modem A7672SA)</span></h3>
+    <p class="sub">O que entra quando o armário não pode depender do Wi-Fi da casa.</p>
+  <div id="grp-lte"></div>
+  </div>
+
+  <div class="shop-note" data-opt="lte">
+    <b>⚠ Sobre o modem:</b> compre o <b>breakout</b> do A7672SA (com regulador de entrada 5V, conversor de nível
+    3,3V na UART e slot de SIM), não o módulo nu — o chip fala UART em 1,8V e não sobrevive a 3,3V direto.
+    Confira no anúncio a versão <b>A7672SA-FASE</b> (bandas LTE do Brasil) e se a antena vem no kit.
+  </div>
+
   <div class="shop-note">
     <b>⚠ Antes de fechar o pedido:</b> confira que o módulo relé anunciado é <b>optoacoplado e ativo em nível
     BAIXO</b> — é o padrão de mercado, mas alguns módulos chineses vêm ativo em nível ALTO e o firmware
@@ -628,14 +921,16 @@
 <section class="doc">
   <h2>// Como o sistema funciona</h2>
 
-  <h3>1 · Energia</h3>
+  <h3 data-t="Energia">1 · Energia</h3>
   <p>A fonte chaveada entrega <b>12V DC</b> pelo plugue P4. No conector P4 fêmea, a energia é distribuída
   em dois barramentos (bornes ou Wago): um de <b>+12V</b> e um de <b>GND</b>. Desses barramentos saem duas linhas:
   uma vai direto para os contatos <code>COM</code> do módulo relé (a energia "bruta" que segura os ímãs) e outra
   entra no <b>LM2596</b>, que abaixa 12V para <b>5V</b> e alimenta o ESP32 pelo pino <code>VIN</code> e as bobinas
-  do relé pelo pino <code>JD-VCC</code>.</p>
+  do relé pelo pino <code>JD-VCC</code>.<span data-opt="lte"> Com o modem 4G, sai uma terceira linha dos barramentos
+  para um <b>segundo LM2596</b>, ajustado em 5,0V e dedicado ao A7672SA: o modem puxa rajadas de até 2A quando
+  transmite, e isso não pode passar pelo trilho que alimenta o ESP32. Por isso a fonte sobe para <b>12V/5A</b>.</span></p>
 
-  <h3>2 · Estado padrão: trancado sem gastar o relé</h3>
+  <h3 data-t="Estado padrão: trancado sem gastar o relé">2 · Estado padrão: trancado sem gastar o relé</h3>
   <p>Aqui está o detalhe mais importante da montagem: os eletroímãs são ligados no contato
   <b>NC (normalmente fechado)</b> de cada canal, e não no NO. Com o relé em repouso (bobina desligada),
   o contato NC fica fechado e o caminho <code>+12V → COM → NC → ímã → GND</code> está completo: a porta
@@ -643,42 +938,108 @@
   A bobina só é acionada durante os ~3 segundos de abertura. Isso economiza energia, reduz aquecimento
   e alonga a vida útil do módulo.</p>
 
-  <h3>3 · O comando MQTT</h3>
+  <h3 data-t="O comando MQTT">3 · O comando MQTT</h3>
   <div class="flow">
     <span class="step">App / automação publica<br><code>portas/1/abrir</code></span><span class="arr">→</span>
     <span class="step">Broker MQTT<br>(nuvem ou rede local)</span><span class="arr">→</span>
-    <span class="step">ESP32 assinado no tópico<br>recebe a mensagem via Wi-Fi</span><span class="arr">→</span>
-    <span class="step">GPIO23 vai a nível BAIXO<br>bobina do canal 1 liga</span><span class="arr">→</span>
+    <span class="step">ESP32 assinado no tópico<br>recebe a mensagem <span id="flow-link">via Wi-Fi</span></span><span class="arr">→</span>
+    <span class="step">GPIO22 vai a nível BAIXO<br>bobina do canal 1 liga</span><span class="arr">→</span>
     <span class="step">Contato comuta NC→NO<br>ímã 1 perde os 12V</span><span class="arr">→</span>
     <span class="step">Porta 1 destrava<br>por 3 segundos</span><span class="arr">→</span>
-    <span class="step">GPIO23 volta a ALTO<br>NC fecha, ímã religa, tranca</span>
+    <span class="step">GPIO22 volta a ALTO<br>NC fecha, ímã religa, tranca</span>
   </div>
   <p>O módulo relé típico de 4 canais é <b>ativo em nível baixo</b>: o canal liga quando o pino
   <code>IN</code> vai para 0V. Por isso, no firmware, a primeira coisa do <code>setup()</code> é colocar
-  GPIO23/22/21 em <b>nível ALTO</b> — assim nada pisca no boot. Esses três GPIOs foram escolhidos de propósito:
+  GPIO22/21/16 em <b>nível ALTO</b> — assim nada pisca no boot. Esses três GPIOs foram escolhidos de propósito:
   ficam na coluna direita da placa (do mesmo lado do 3V3 e do GND, encurtando os jumpers) e
-  <b>não são pinos de strapping</b> — diferente de GPIO0, 2, 5, 12 e 15, eles não interferem no boot
-  nem oscilam durante a inicialização.</p>
+  <b>não são pinos de strapping</b> — não interferem no boot nem oscilam durante a inicialização.
+  <span data-opt="tft">Já os pinos "nobres" do barramento SPI (<code>GPIO23</code> MOSI e <code>GPIO18</code> SCK) ficaram
+  reservados para o display. Os strapping GPIO15 e GPIO2 podem ir no display sem medo: são <b>saídas</b>
+  do ESP32 (CS e DC), e a tela não força nível nelas durante o boot — o que não pode é usá-los para
+  acionar relé, senão as portas piscam ao ligar.</span><span data-opt="notft">Sem a tela, os pinos
+  23/18/15/2/4 ficam livres — só não use GPIO15 e GPIO2 (strapping) para acionar relé, senão as portas
+  piscam ao ligar.</span><span data-opt="lte"> O modem fica em <code>GPIO26/27</code> (UART1) mais
+  <code>GPIO25/33</code>: o UART2 "padrão" (16/17) não serve porque o GPIO16 já é o IN3 do relé.</span></p>
 
-  <h3>4 · O papel do diodo 1N4007</h3>
+  <h3 data-t="O papel do diodo 1N4007">4 · O papel do diodo 1N4007</h3>
   <p>O eletroímã é uma bobina. Quando o relé corta os 12V, a bobina tenta manter a corrente e gera um
   pico de tensão reversa (centenas de volts) que arca nos contatos do relé e injeta ruído no circuito —
   ruído suficiente para travar ou reiniciar um ESP32. O 1N4007 em paralelo com cada ímã dá caminho de
   retorno para essa corrente. <b>Polaridade é crítica:</b> a faixa cinza (catodo) fica no terminal
   <b>positivo</b> do ímã. Invertido, ele vira um curto-circuito da fonte.</p>
 
-  <h3>5 · Comportamento em queda de energia (fail-safe)</h3>
+  <h3 data-t="Comportamento em queda de energia (fail-safe)">5 · Comportamento em queda de energia (fail-safe)</h3>
   <p>Eletroímã trancado = eletroímã energizado. Se faltar luz, <b>as três portas destravam</b>.
   Isso é uma característica desejável para rota de fuga/incêndio (por norma, ímã de porta é fail-safe),
   mas significa que o sistema não protege durante um apagão. Se isso for um problema para o seu caso,
   a solução é um no-break/bateria 12V na entrada — o circuito não muda.</p>
 
-  <h3>6 · Orçamento de corrente</h3>
+  <h3 data-t="Orçamento de corrente">6 · Orçamento de corrente</h3>
   <p>Cada eletroímã de 12V consome tipicamente 350–500&nbsp;mA. Três ímãs sempre ligados ≈ <b>1,0 a 1,5&nbsp;A</b>,
-  mais ESP32 + relés ≈ 0,2&nbsp;A referidos a 12V. A fonte de 2A fecha a conta, mas trabalhando perto do limite
-  térmico dela. Se puder, use <b>12V/3A</b> — custa quase o mesmo e roda folgada. E confira a força de retenção
+  mais ESP32 + relés ≈ 0,2&nbsp;A referidos a 12V. Uma fonte de 2A fecha a conta, mas trabalhando perto do limite
+  térmico dela — por isso a lista pede <b>12V/3A</b>: custa quase o mesmo e roda folgada. Confira a força de retenção
   do ímã escolhido: modelos de bancada de ~2,5&nbsp;kgf seguram portinhola de armário; para porta de ambiente
-  o usual é 60&nbsp;kgf ou mais.</p>
+  o usual é 60&nbsp;kgf ou mais.<span data-opt="tft"> A tela TFT soma uns <b>100&nbsp;mA</b> em 5V — entra na folga da conta.</span>
+  <span data-opt="lte">O modem 4G muda a conta: em repouso são ~80&nbsp;mA, mas no registro na rede e em cada
+  transmissão o A7672SA puxa <b>rajadas de até 2&nbsp;A em 5V</b> (≈1&nbsp;A referido a 12V). Daí a fonte de
+  <b>12V/5A</b>, o LM2596 #2 exclusivo e o capacitor de 1000µF colado no VIN do módulo.</span></p>
+
+  <h3 data-opt="tft" data-t="A tela de status (TFT 4&quot; SPI)">7 · A tela de status (TFT 4" SPI)</h3>
+  <p data-opt="tft">Embutida no <b>canto superior direito da porta branca</b> (o compartimento de equipamentos), a tela
+  mostra em tempo real o estado das três travas, a rede e a conexão MQTT — o cliente vê o que está
+  acontecendo sem abrir nada. O ESP32 desenha nela pelo barramento <b>SPI</b>
+  (<code>GPIO23</code> SDI, <code>GPIO18</code> SCK, <code>GPIO15</code> CS, <code>GPIO2</code> DC,
+  <code>GPIO4</code> RESET) usando a biblioteca <code>TFT_eSPI</code> ou <code>LovyanGFX</code> —
+  qualquer uma redesenha a tela inteira em milissegundos a 40MHz. O chicote de 8 vias
+  (5V, GND + 6 sinais) sai do ESP32 e chega à tela pelo <b>lado das dobradiças</b>, com um laço de
+  folga: assim a porta abre e fecha sem tracionar os fios. Se a sua tela tiver touch (pinos T_CLK,
+  T_CS…), dá para usá-la depois como botão local de abertura<span data-opt="nolte"> — os GPIOs 19, 25, 26 e 27 estão livres</span><span data-opt="lte"> — os GPIOs 19, 5 e 17 continuam livres (25/26/27/33 ficaram com o modem)</span>.</p>
+
+  <h3 data-opt="notft" data-t="Sem a tela: o que muda">7 · Sem a tela: o que muda</h3>
+  <p data-opt="notft">Nada no lado de potência. Some o chicote de 8 vias até a porta, somem os cinco fios do SPI e o
+  item da tela na lista de compras; os pinos <code>GPIO23/18/15/2/4</code> ficam livres para o futuro. O status
+  das travas continua chegando por MQTT (tópicos <code>portas/N/status</code>, retidos) — quem quiser "ver" o
+  armário lê pelo app ou pelo painel do broker. Se um dia a tela entrar, é só ligar as 8 vias e mudar
+  <code>HAS_TFT</code> para 1 no firmware: a fiação do resto não muda.</p>
+
+  <h3 data-opt="lte" data-t="O modem 4G (SIMCom A7672SA)">8 · O modem 4G (SIMCom A7672SA)</h3>
+  <p data-opt="lte">O A7672SA é um módulo LTE Cat.1: recebe um chip SIM, sobe na operadora e entrega à ESP32 uma conexão
+  de internet pela <b>UART</b>. Ele <b>não é um roteador</b> — não emite Wi-Fi sozinho — e só serve ligado por fio à
+  ESP32: <code>GPIO27</code> (TX) → RXD, <code>GPIO26</code> (RX) ← TXD, <code>GPIO25</code> → PWRKEY (pulso de ~1&nbsp;s
+  para ligar) e <code>GPIO33</code> → RST. O firmware usa a pilha <b>PPP</b> do core arduino-esp32 3.x (perfil
+  SIM7600, compatível em AT com o A7672SA): o modem vira uma interface de rede da ESP32 e o mesmo
+  <code>PubSubClient</code> continua falando com o broker — os tópicos <code>portas/N/abrir</code> não mudam.</p>
+  <p data-opt="lte"><b>Alimentação:</b> rajadas de até 2&nbsp;A em 5&nbsp;V. Por isso a fonte de <b>12V/5A</b>, o
+  <b>LM2596 #2</b> só do modem (ajustado em 5,0V com multímetro, como o primeiro) e o <b>capacitor de 1000µF</b>
+  colado no VIN — GND comum a tudo. <b>Lógica:</b> o chip nu fala UART em 1,8&nbsp;V; compre o breakout com
+  conversor de nível para 3,3&nbsp;V. <b>Antena:</b> FPC adesiva 4G no cabo IPEX, colada no lado de dentro do
+  painel de fundo, longe da fonte e dos ímãs; se o sinal dentro do móvel ficar abaixo de −100&nbsp;dBm, leve a
+  antena para fora com um pigtail IPEX→SMA. <b>Chip:</b> SIM de dados (plano M2M/IoT ou pré-pago) com o APN
+  da operadora no firmware. <b>Primeiro teste:</b> o sketch <code>firmware/teste_at_modem</code> faz ponte
+  serial — <code>AT</code> → <code>OK</code>, depois <code>AT+CPIN?</code>, <code>AT+CSQ</code>, <code>AT+CREG?</code>.</p>
+
+  <h3 data-opt="dual" data-t="Wi-Fi da casa com o 4G de reserva">9 · Wi-Fi da casa com o 4G de reserva</h3>
+  <p data-opt="dual">A ESP32 sobe no Wi-Fi da casa como sempre. Se ficar 30&nbsp;s sem Wi-Fi (ou sem alcançar o broker),
+  ela liga o A7672SA, sobe o PPP e reconecta o MQTT pelo 4G — mesmos tópicos, mesmo broker. Quando o Wi-Fi volta,
+  o modem é desligado para poupar dados e energia. Cobre roteador travado, troca de senha do Wi-Fi e queda da
+  internet fixa; não cobre falta de luz — os ímãs soltam de qualquer jeito (item 5).</p>
+
+  <h3 data-opt="lteonly" data-t="Só 4G (sem Wi-Fi da casa)">10 · Só 4G (sem Wi-Fi da casa)</h3>
+  <p data-opt="lteonly">Montagem para local sem Wi-Fi confiável (loja, feira, evento): só a ESP32 e o modem. A ESP32 nem
+  procura rede da casa — sobe o PPP no boot e o MQTT roda 100% pelo chip. O consumo de dados é pequeno
+  (keepalive do MQTT + comandos ≈ poucos MB por mês). O ponto fraco é a cobertura dentro do móvel: acompanhe o
+  RSSI no monitor serial e, se precisar, leve a antena para fora do armário.</p>
+
+  <h3 data-opt="ap" data-t="Hotspot da ESP32 (Wi-Fi do armário)">11 · Hotspot da ESP32 (Wi-Fi do armário)</h3>
+  <p data-opt="ap">Com o hotspot, a própria ESP32 emite um Wi-Fi (<code>Acesso-Armario</code>, WPA2) e repassa o
+  tráfego dos aparelhos conectados para o 4G usando NAT (o NAPT do lwIP, ligado por
+  <code>WiFi.AP.enableNAPT(true)</code> no core 3.x). Quem entra nesse Wi-Fi ganha duas coisas: abrir as portas
+  <b>na rede local</b>, sem depender da internet, pela página <code>http://192.168.4.1</code> que o firmware serve;
+  e navegar pela internet do chip. Seja realista com a segunda parte: a UART a 115200 rende uns <b>80&nbsp;kbps</b>
+  — página leve e MQTT ok, vídeo não. Dá para subir a UART para 921600 (<code>AT+IPR</code>) e chegar perto de
+  500&nbsp;kbps, mas continua sendo um hotspot de emergência, não um roteador. O modem não faz nada disso sozinho:
+  é a ESP32 que acumula os dois papéis — cliente 4G e ponto de acesso — e o consumo sobe (Wi-Fi AP + LTE em TX
+  ao mesmo tempo, mais um motivo para a fonte de 5A).</p>
 </section>
 
 <!-- ================= TABELA DE CONEXÕES ================= -->
@@ -700,15 +1061,32 @@
       <tr><td class="mono">08</td><td class="mono">LM2596 · OUT+ (5,0V)</td><td class="mono">Relé · JD-VCC <i>(jumper removido)</i></td><td><span class="chip" style="background:var(--w5)"></span>laranja</td><td>Alimenta as bobinas dos relés (são de 5V)</td></tr>
       <tr><td class="mono">09</td><td class="mono">ESP32 · 3V3</td><td class="mono">Relé · VCC</td><td><span class="chip" style="background:var(--w33)"></span>roxo</td><td>Alimenta o lado lógico/optoacopladores em 3,3V</td></tr>
       <tr><td class="mono">10</td><td class="mono">ESP32 · GND</td><td class="mono">Relé · GND</td><td><span class="chip" style="background:var(--wgnd)"></span>preto</td><td>Referência dos sinais IN</td></tr>
-      <tr><td class="mono">11</td><td class="mono">ESP32 · GPIO23</td><td class="mono">Relé · IN1</td><td><span class="chip" style="background:var(--ws1)"></span>amarelo</td><td>Comando da Porta 1 (ativo em nível baixo)</td></tr>
-      <tr><td class="mono">12</td><td class="mono">ESP32 · GPIO22</td><td class="mono">Relé · IN2</td><td><span class="chip" style="background:var(--ws2)"></span>verde</td><td>Comando da Porta 2</td></tr>
-      <tr><td class="mono">13</td><td class="mono">ESP32 · GPIO21</td><td class="mono">Relé · IN3</td><td><span class="chip" style="background:var(--ws3)"></span>azul</td><td>Comando da Porta 3 (IN4 fica livre)</td></tr>
+      <tr><td class="mono">11</td><td class="mono">ESP32 · GPIO22</td><td class="mono">Relé · IN1</td><td><span class="chip" style="background:var(--ws1)"></span>amarelo</td><td>Comando da Porta 1 · vitrine superior (ativo em nível baixo)</td></tr>
+      <tr><td class="mono">12</td><td class="mono">ESP32 · GPIO21</td><td class="mono">Relé · IN2</td><td><span class="chip" style="background:var(--ws2)"></span>verde</td><td>Comando da Porta 2 · vitrine do meio</td></tr>
+      <tr><td class="mono">13</td><td class="mono">ESP32 · GPIO16 (RX2)</td><td class="mono">Relé · IN3</td><td><span class="chip" style="background:var(--ws3)"></span>azul</td><td>Comando da Porta 3 · gaveta (IN4 fica livre)</td></tr>
       <tr><td class="mono">14</td><td class="mono">Borne +12V</td><td class="mono">Relé · COM1, COM2, COM3</td><td><span class="chip" style="background:var(--w12)"></span>vermelho ×3</td><td>Energia que passa pelos contatos</td></tr>
       <tr><td class="mono">15</td><td class="mono">Relé · NC1</td><td class="mono">Eletroímã 1 · (+)</td><td><span class="chip" style="background:var(--wl1)"></span>cabo paralelo 0,75mm²</td><td>Trava da Porta 1 (fechado em repouso)</td></tr>
       <tr><td class="mono">16</td><td class="mono">Relé · NC2</td><td class="mono">Eletroímã 2 · (+)</td><td><span class="chip" style="background:var(--wl2)"></span>cabo paralelo 0,75mm²</td><td>Trava da Porta 2</td></tr>
       <tr><td class="mono">17</td><td class="mono">Relé · NC3</td><td class="mono">Eletroímã 3 · (+)</td><td><span class="chip" style="background:var(--wl3)"></span>cabo paralelo 0,75mm²</td><td>Trava da Porta 3</td></tr>
       <tr><td class="mono">18</td><td class="mono">Eletroímãs 1–3 · (−)</td><td class="mono">Borne GND</td><td><span class="chip" style="background:var(--wgnd)"></span>cabo paralelo 0,75mm²</td><td>Retorno da corrente dos ímãs</td></tr>
       <tr><td class="mono">19</td><td class="mono">Diodos D1–D3 (1N4007)</td><td class="mono">Em paralelo com cada ímã</td><td><span class="chip" style="background:#d0d6dd"></span>—</td><td><b>Faixa (catodo) no terminal +</b> · absorve o pico da bobina</td></tr>
+      <tr data-opt="tft"><td class="mono">20</td><td class="mono">LM2596 · OUT+ (5,0V)</td><td class="mono">Display · VCC</td><td><span class="chip" style="background:var(--w5)"></span>laranja</td><td>Alimentação da tela (o módulo tem regulador próprio)</td></tr>
+      <tr data-opt="tft"><td class="mono">21</td><td class="mono">Display · GND</td><td class="mono">Borne GND</td><td><span class="chip" style="background:var(--wgnd)"></span>preto</td><td>Retorno da tela</td></tr>
+      <tr data-opt="tft"><td class="mono">22</td><td class="mono">ESP32 · GPIO15</td><td class="mono">Display · CS</td><td><span class="chip" style="background:var(--wdisp)"></span>verde-água</td><td>Chip-select do SPI</td></tr>
+      <tr data-opt="tft"><td class="mono">23</td><td class="mono">ESP32 · GPIO4</td><td class="mono">Display · RESET</td><td><span class="chip" style="background:var(--wdisp)"></span>verde-água</td><td>Reset do controlador da tela</td></tr>
+      <tr data-opt="tft"><td class="mono">24</td><td class="mono">ESP32 · GPIO2</td><td class="mono">Display · DC</td><td><span class="chip" style="background:var(--wdisp)"></span>verde-água</td><td>Seleciona dado ou comando</td></tr>
+      <tr data-opt="tft"><td class="mono">25</td><td class="mono">ESP32 · GPIO23 (MOSI)</td><td class="mono">Display · SDI</td><td><span class="chip" style="background:var(--wdisp)"></span>verde-água</td><td>Dados do desenho (SPI a 40MHz)</td></tr>
+      <tr data-opt="tft"><td class="mono">26</td><td class="mono">ESP32 · GPIO18 (SCK)</td><td class="mono">Display · SCK</td><td><span class="chip" style="background:var(--wdisp)"></span>verde-água</td><td>Clock do SPI</td></tr>
+      <tr data-opt="tft"><td class="mono">27</td><td class="mono">ESP32 · 3V3</td><td class="mono">Display · LED</td><td><span class="chip" style="background:var(--w33)"></span>roxo</td><td>Backlight sempre aceso (ou GPIO32 + PWM p/ dimerizar)</td></tr>
+      <tr data-opt="lte"><td class="mono">28</td><td class="mono">Borne +12V</td><td class="mono">LM2596 #2 · IN+</td><td><span class="chip" style="background:var(--w12)"></span>vermelho</td><td>Entrada do conversor exclusivo do modem</td></tr>
+      <tr data-opt="lte"><td class="mono">29</td><td class="mono">Borne GND</td><td class="mono">LM2596 #2 · IN−</td><td><span class="chip" style="background:var(--wgnd)"></span>preto</td><td>Retorno do conversor #2</td></tr>
+      <tr data-opt="lte"><td class="mono">30</td><td class="mono">LM2596 #2 · OUT+ (5,0V)</td><td class="mono">Modem · VIN</td><td><span class="chip" style="background:var(--w5m)"></span>laranja-escuro</td><td>Alimentação dedicada do A7672SA · <b>1000µF entre VIN e GND</b>, colado no módulo</td></tr>
+      <tr data-opt="lte"><td class="mono">31</td><td class="mono">LM2596 #2 · OUT−</td><td class="mono">Modem · GND</td><td><span class="chip" style="background:var(--wgnd)"></span>preto</td><td>Retorno do modem (GND comum com o ESP32)</td></tr>
+      <tr data-opt="lte"><td class="mono">32</td><td class="mono">ESP32 · GPIO27 (TX1)</td><td class="mono">Modem · RXD</td><td><span class="chip" style="background:var(--wlte)"></span>azul-claro</td><td>Comandos AT e PPP · 115200 8N1 · 3,3V</td></tr>
+      <tr data-opt="lte"><td class="mono">33</td><td class="mono">ESP32 · GPIO26 (RX1)</td><td class="mono">Modem · TXD</td><td><span class="chip" style="background:var(--wlte)"></span>azul-claro</td><td>Respostas do modem</td></tr>
+      <tr data-opt="lte"><td class="mono">34</td><td class="mono">ESP32 · GPIO25</td><td class="mono">Modem · PWRKEY</td><td><span class="chip" style="background:var(--wlte)"></span>azul-claro</td><td>Pulso de ~1s liga o módulo (confira a polaridade no manual do breakout)</td></tr>
+      <tr data-opt="lte"><td class="mono">35</td><td class="mono">ESP32 · GPIO33</td><td class="mono">Modem · RST</td><td><span class="chip" style="background:var(--wlte)"></span>azul-claro</td><td>Reset de emergência do modem (opcional)</td></tr>
+      <tr data-opt="lte"><td class="mono">36</td><td class="mono">Modem · ANT (IPEX)</td><td class="mono">Antena LTE FPC</td><td><span class="chip" style="background:#3a3f47"></span>coaxial IPEX</td><td>Cabo de 10–15cm; antena colada no painel de fundo, longe da fonte e dos ímãs</td></tr>
     </tbody>
   </table>
   <div class="warn"><b>JD-VCC, explicado:</b> nesses módulos, o pino VCC alimenta só o lado do LED/optoacoplador
@@ -719,69 +1097,127 @@
 </section>
 </main>
 
+<footer>
+  Circuito · Controle de Acesso — 3 portas · configuração salva no link (<code>#tft=…&amp;net=…&amp;ap=…</code>) ·
+  <a href="https://github.com/adialaleal/circuito-controle-acesso">código-fonte, firmware e simulação Wokwi no GitHub</a>
+</footer>
+
 <script>
+/* ============================================================
+   CONFIGURAÇÃO DA MONTAGEM — estado global
+   tft: tela TFT 4" presente · net: wifi | dual | lte · ap: hotspot da ESP32
+============================================================ */
+const CFG_KEY='cfg-montagem';
+const cfg={tft:true,net:'wifi',ap:false};
+function readCfg(){
+  let src=null;
+  const h=location.hash.replace(/^#/,'');
+  if(h&&/=/.test(h)){src={};h.split('&').forEach(kv=>{const [k,v]=kv.split('=');if(k)src[k]=decodeURIComponent(v||'');});}
+  else{try{src=JSON.parse(localStorage.getItem(CFG_KEY)||'null');}catch(e){src=null;}}
+  if(!src)return;
+  if(src.tft!==undefined)cfg.tft=(src.tft==='1'||src.tft===true||src.tft===1);
+  if(['wifi','dual','lte'].includes(src.net))cfg.net=src.net;
+  if(src.ap!==undefined)cfg.ap=(src.ap==='1'||src.ap===true||src.ap===1);
+  if(cfg.net!=='lte')cfg.ap=false;
+  if(src.tab==='3d')selectTab('b'); else if(src.tab==='lista')selectTab('c');
+}
+function optOn(o){
+  switch(o){
+    case 'tft':return cfg.tft;            case 'notft':return !cfg.tft;
+    case 'lte':return cfg.net!=='wifi';   case 'nolte':return cfg.net==='wifi';
+    case 'wifi':return cfg.net!=='lte';   case 'dual':return cfg.net==='dual';
+    case 'lteonly':return cfg.net==='lte';
+    case 'ap':return cfg.ap;              case 'noap':return !cfg.ap;
+    case 'radio':return cfg.net!=='lte'||cfg.ap;
+    default:return true;
+  }
+}
+const OPTS=['tft','notft','lte','nolte','wifi','dual','lteonly','ap','noap','radio'];
+const txt=v=>typeof v==='function'?v():v;
+const NET_NAME={wifi:'Wi-Fi da casa',dual:'Wi-Fi da casa + 4G de reserva',lte:'só 4G (A7672SA)'};
+
 /* ============================================================
    DADOS — componentes, redes e pinagem
 ============================================================ */
 const NETS = {
-  '12v' : {name:'+12V (potência)',        color:'var(--w12)',  hex:0xff5c5c, desc:'Sai da fonte, energiza o LM2596 e os contatos COM dos canais 1–3 do relé. É a corrente que segura os ímãs.'},
-  'gnd' : {name:'GND · 0V comum',         color:'var(--wgnd)', hex:0x93a0b1, desc:'Retorno único de todo o sistema: fonte, LM2596, ESP32, módulo relé e os três eletroímãs compartilham o mesmo 0V.'},
-  '5v'  : {name:'+5V (saída do LM2596)',  color:'var(--w5)',   hex:0xffa94d, desc:'Ajustada no trimpot para 5,0V. Alimenta o VIN do ESP32 e o JD-VCC do relé (bobinas de 5V).'},
-  '3v3' : {name:'3V3 (lógica)',           color:'var(--w33)',  hex:0xc084fc, desc:'Do regulador interno do ESP32 para o pino VCC do módulo relé — alimenta só o lado dos optoacopladores.'},
-  'sig1': {name:'Sinal · Porta 1',        color:'var(--ws1)',  hex:0xffd43b, desc:'GPIO23 → IN1. Ativo em nível BAIXO: 0V liga a bobina do canal 1 e destrava a porta por ~3s.'},
-  'sig2': {name:'Sinal · Porta 2',        color:'var(--ws2)',  hex:0x69db7c, desc:'GPIO22 → IN2. Ativo em nível BAIXO: 0V liga a bobina do canal 2.'},
-  'sig3': {name:'Sinal · Porta 3',        color:'var(--ws3)',  hex:0x4dd4f7, desc:'GPIO21 → IN3. Ativo em nível BAIXO: 0V liga a bobina do canal 3. O IN4 fica de reserva.'},
+  '12v' : {name:'+12V (potência)',        color:'var(--w12)',  hex:0xff5c5c, desc:()=>'Sai da fonte, energiza o LM2596'+(optOn('lte')?' (os dois)':'')+' e os contatos COM dos canais 1–3 do relé. É a corrente que segura os ímãs.'},
+  'gnd' : {name:'GND · 0V comum',         color:'var(--wgnd)', hex:0x93a0b1, desc:()=>'Retorno único de todo o sistema: fonte, LM2596, ESP32, módulo relé'+(optOn('lte')?', modem 4G':'')+' e os três eletroímãs compartilham o mesmo 0V.'},
+  '5v'  : {name:'+5V (saída do LM2596)',  color:'var(--w5)',   hex:0xffa94d, desc:()=>'Ajustada no trimpot para 5,0V. Alimenta o VIN do ESP32 e o JD-VCC do relé (bobinas de 5V)'+(cfg.tft?' e o VCC do display':'')+'.'},
+  '3v3' : {name:'3V3 (lógica)',           color:'var(--w33)',  hex:0xc084fc, desc:()=>'Do regulador interno do ESP32 para o VCC do módulo relé (lado dos optoacopladores)'+(cfg.tft?' e o LED/backlight do display':'')+'.'},
+  'sig1': {name:'Sinal · Porta 1',        color:'var(--ws1)',  hex:0xffd43b, desc:'GPIO22 → IN1. Ativo em nível BAIXO: 0V liga a bobina do canal 1 e destrava a porta por ~3s.'},
+  'sig2': {name:'Sinal · Porta 2',        color:'var(--ws2)',  hex:0x69db7c, desc:'GPIO21 → IN2. Ativo em nível BAIXO: 0V liga a bobina do canal 2.'},
+  'sig3': {name:'Sinal · Porta 3 (gaveta)',color:'var(--ws3)', hex:0x4dd4f7, desc:'GPIO16 → IN3. Ativo em nível BAIXO: 0V liga a bobina do canal 3 e solta a gaveta. O IN4 fica de reserva.'},
+  'disp': {name:'SPI do display (5 fios)', color:'var(--wdisp)',hex:0x20c997, opt:'tft', desc:'Barramento do TFT: SDI/MOSI=GPIO23, SCK=GPIO18, CS=GPIO15, DC=GPIO2, RESET=GPIO4. Só o ESP32 fala (o SDO de leitura fica sem uso), por isso 5 fios bastam.'},
+  '5vm' : {name:'+5V do modem (LM2596 #2)',color:'var(--w5m)', hex:0xf97316, opt:'lte', desc:'Saída do segundo LM2596, ajustada em 5,0V e dedicada ao A7672SA. As rajadas de 2A do 4G ficam fora do trilho do ESP32; o capacitor de 1000µF segura a tensão durante a transmissão.'},
+  'lte' : {name:'UART + controle do modem',color:'var(--wlte)',hex:0x60a5fa, opt:'lte', desc:'GPIO27 (TX) → RXD e GPIO26 (RX) ← TXD a 115200 8N1; GPIO25 → PWRKEY (pulso de ~1s para ligar) e GPIO33 → RST. Lógica em 3,3V — confira que o breakout tem conversor de nível (o chip nu fala 1,8V).'},
   'lock1':{name:'Trava 1 · 12V chaveado', color:'var(--wl1)',  hex:0xff8fa3, desc:'COM1→NC1→ímã 1. Em repouso o NC está fechado e o ímã fica energizado (porta trancada). O relé interrompe esse fio por 3s para abrir.'},
   'lock2':{name:'Trava 2 · 12V chaveado', color:'var(--wl2)',  hex:0xf0abfc, desc:'COM2→NC2→ímã 2. Fechado em repouso; interrompido durante a abertura.'},
   'lock3':{name:'Trava 3 · 12V chaveado', color:'var(--wl3)',  hex:0xffc078, desc:'COM3→NC3→ímã 3. Fechado em repouso; interrompido durante a abertura.'}
 };
 
 const COMPS = {
-  fonte:   {num:'01', name:'Fonte chaveada 12V · 2A', nets:['12v','gnd'],
-    desc:'Converte a rede AC (127/220V) em 12V DC. Alimenta tudo: ímãs, relés e — via LM2596 — o ESP32.',
-    conns:['<b>Saída P4</b> → conector P4 fêmea','Consumo em regime: ~1,2–1,7A (3 ímãs + lógica). 2A fecha; 3A roda folgada.']},
-  p4:      {num:'02', name:'Conector P4 fêmea com borne', nets:['12v','gnd'],
+  fonte:   {name:()=>'Fonte chaveada 12V · '+(optOn('lte')?'5A':'3A'), nets:['12v','gnd'],
+    desc:()=>'Converte a rede AC (127/220V) em 12V DC. Alimenta tudo: ímãs, relés'+(optOn('lte')?', o modem 4G':'')+' e — via LM2596 — o ESP32.',
+    conns:()=>['<b>Saída P4</b> → conector P4 fêmea',
+      optOn('lte')?'Consumo: ~1,2–1,7A dos ímãs + lógica, mais rajadas de ~1A (referidas a 12V) do modem. 5A roda folgada e frio.'
+                  :'Consumo em regime: ~1,2–1,7A (3 ímãs + lógica). 2A fecha no limite; 3A roda folgada.']},
+  p4:      {name:'Conector P4 fêmea com borne', nets:['12v','gnd'],
     desc:'Recebe o plugue da fonte e converte em dois parafusos (+ e −), de onde a fiação parte com firmeza.',
     conns:['<b>(+)</b> → borne de distribuição +12V','<b>(−)</b> → borne de distribuição GND','Confira a polaridade: no P4 padrão o pino central é o positivo.']},
-  borne12: {num:'03', name:'Borne / Wago · barramento +12V', nets:['12v'],
-    desc:'Ponto único de distribuição do positivo: um fio entra, quatro saem. Evita emendas soltas.',
-    conns:['← P4 fêmea (+)','→ LM2596 · IN+','→ Relé · COM1','→ Relé · COM2','→ Relé · COM3']},
-  bornegnd:{num:'04', name:'Borne / Wago · barramento GND', nets:['gnd'],
+  borne12: {name:'Borne / Wago · barramento +12V', nets:['12v'],
+    desc:()=>'Ponto único de distribuição do positivo: um fio entra, '+(optOn('lte')?'cinco':'quatro')+' saem. Evita emendas soltas.',
+    conns:['← P4 fêmea (+)','→ LM2596 · IN+',{t:'→ LM2596 #2 (modem) · IN+',opt:'lte'},'→ Relé · COM1','→ Relé · COM2','→ Relé · COM3']},
+  bornegnd:{name:'Borne / Wago · barramento GND', nets:['gnd'],
     desc:'Ponto único do retorno (0V). Todos os negativos do sistema se encontram aqui.',
-    conns:['← P4 fêmea (−)','→ LM2596 · IN−','→ Eletroímã 1 (−)','→ Eletroímã 2 (−)','→ Eletroímã 3 (−)']},
-  lm2596:  {num:'05', name:'Conversor step-down LM2596', nets:['12v','gnd','5v'],
+    conns:['← P4 fêmea (−)','→ LM2596 · IN−',{t:'→ LM2596 #2 (modem) · IN−',opt:'lte'},'→ Eletroímã 1 (−)','→ Eletroímã 2 (−)','→ Eletroímã 3 (−)',{t:'→ Display · GND',opt:'tft'}]},
+  lm2596:  {name:'Conversor step-down LM2596', nets:['12v','gnd','5v'],
     desc:'Abaixa os 12V da fonte para 5,0V. Ajuste o trimpot azul COM MULTÍMETRO antes de conectar o ESP32.',
-    conns:['<b>IN+</b> ← borne +12V','<b>IN−</b> ← borne GND','<b>OUT+ (5,0V)</b> → ESP32 · VIN &nbsp;e&nbsp; Relé · JD-VCC','<b>OUT−</b> → ESP32 · GND']},
-  esp32:   {num:'06', name:'ESP32 NodeMCU (ESP-WROOM-32, 30 pinos)', nets:['5v','gnd','3v3','sig1','sig2','sig3'],
-    desc:'O cérebro: conecta no Wi-Fi, assina os tópicos MQTT e comanda os 3 canais do relé. GPIO 23/22/21 escolhidos por não serem pinos de strapping (não piscam no boot) e por ficarem do mesmo lado que 3V3 e GND.',
-    conns:['<b>VIN</b> ← 5V do LM2596','<b>GND</b> ↔ LM2596 OUT− e Relé GND','<b>3V3</b> → Relé · VCC','<b>GPIO23</b> → Relé · IN1 (Porta 1)','<b>GPIO22</b> → Relé · IN2 (Porta 2)','<b>GPIO21</b> → Relé · IN3 (Porta 3)']},
-  rele:    {num:'07', name:'Módulo relé 4 canais (optoacoplado)', nets:['sig1','sig2','sig3','3v3','5v','gnd','12v','lock1','lock2','lock3'],
+    conns:['<b>IN+</b> ← borne +12V','<b>IN−</b> ← borne GND','<b>OUT+ (5,0V)</b> → ESP32 · VIN &nbsp;e&nbsp; Relé · JD-VCC',{t:'<b>OUT+ (5,0V)</b> → Display · VCC',opt:'tft'},'<b>OUT−</b> → ESP32 · GND']},
+  lm2596b: {opt:'lte', name:'Conversor step-down LM2596 #2 (só do modem)', nets:['12v','gnd','5vm'],
+    desc:'Segundo conversor, ajustado em 5,0V e dedicado ao A7672SA. Isola as rajadas de 2A do modem do trilho que alimenta o ESP32 e os relés — sem ele, cada transmissão do 4G derruba a tensão do ESP32.',
+    conns:['<b>IN+</b> ← barramento +12V','<b>IN−</b> ← barramento GND','<b>OUT+ (5,0V)</b> → Modem · VIN (com 1000µF)','<b>OUT−</b> → Modem · GND','Ajuste com multímetro antes de ligar o modem.']},
+  cap:     {opt:'lte', name:'Capacitor 1000µF / 16V (VIN do modem)', nets:['5vm','gnd'],
+    desc:'Eletrolítico logo na entrada do modem. Segura a tensão nas rajadas de transmissão do LTE; sem ele o A7672SA reinicia sozinho no meio do registro na rede.',
+    conns:['<b>(+)</b> no VIN do modem (5V)','<b>(−)</b> no GND','Faixa clara = terminal negativo · o mais perto possível do módulo.']},
+  modem:   {opt:'lte', name:'Modem 4G LTE Cat.1 · SIMCom A7672SA', nets:['5vm','gnd','lte'],
+    desc:()=>'Coloca a ESP32 na internet pela rede celular. Conversa com a ESP32 pela UART1 (comandos AT e depois PPP). Precisa de chip SIM de dados, antena e fonte própria de 5V/2A.'+(cfg.net==='dual'?' Nesta montagem fica desligado até o Wi-Fi da casa cair.':'')+(cfg.ap?' No modo hotspot, é por ele que sai o tráfego dos aparelhos conectados ao Wi-Fi da ESP32.':''),
+    conns:['<b>VIN</b> ← LM2596 #2 · OUT+ (5,0V)','<b>GND</b> ← LM2596 #2 · OUT− (comum com o ESP32)','<b>RXD</b> ← GPIO27 · <b>TXD</b> → GPIO26 (115200 8N1, 3,3V)','<b>PWRKEY</b> ← GPIO25 (pulso ~1s) · <b>RST</b> ← GPIO33','<b>ANT (IPEX)</b> → antena LTE · <b>SIM</b> nano, contatos para baixo','Compre o breakout com conversor de nível 3,3V — o chip nu é 1,8V.']},
+  antena:  {opt:'lte', name:'Antena LTE 4G · FPC adesiva (cabo IPEX)', nets:[],
+    desc:'Antena flexível de 700–2700MHz colada no lado de dentro do painel de fundo, longe da fonte e dos eletroímãs. Se o sinal for fraco dentro do móvel (RSSI abaixo de −100dBm no monitor serial), troque por pigtail IPEX→SMA e leve a antena para fora.',
+    conns:['<b>IPEX</b> → conector ANT do modem','Cabo de 10–15cm; não dobre em ângulo vivo.','Mantenha ≥10cm dos eletroímãs e da fonte chaveada.']},
+  esp32:   {name:'ESP32 NodeMCU (ESP-WROOM-32, 30 pinos)', nets:['5v','gnd','3v3','sig1','sig2','sig3','disp','lte'],
+    desc:()=>'O cérebro: '+({wifi:'conecta no Wi-Fi da casa',dual:'conecta no Wi-Fi da casa e liga o 4G se a rede cair',lte:cfg.ap?'usa só o 4G e ainda emite o hotspot Acesso-Armario':'usa só o 4G'}[cfg.net])+', assina os tópicos MQTT e comanda os 3 canais do relé'+(cfg.tft?' e desenha o status na tela TFT':'')+'. Relés em GPIO 22/21/16 (não são pinos de strapping — não piscam no boot)'+(cfg.tft?'; o barramento SPI (23/18/15/2/4) fica dedicado ao display':'')+(optOn('lte')?'; a UART1 em 26/27 mais 25/33 falam com o modem':'')+'.',
+    conns:['<b>VIN</b> ← 5V do LM2596','<b>GND</b> ↔ LM2596 OUT− e Relé GND',{t:'<b>3V3</b> → Relé · VCC e display · LED',opt:'tft'},{t:'<b>3V3</b> → Relé · VCC',opt:'notft'},'<b>GPIO22</b> → Relé · IN1 (Porta 1)','<b>GPIO21</b> → Relé · IN2 (Porta 2)','<b>GPIO16</b> → Relé · IN3 (Porta 3 · gaveta)',{t:'<b>GPIO23/18/15/2/4</b> → display · SDI/SCK/CS/DC/RESET',opt:'tft'},{t:'<b>GPIO27/26</b> → modem · RXD/TXD · <b>GPIO25</b> → PWRKEY · <b>GPIO33</b> → RST',opt:'lte'}]},
+  display: {opt:'tft', name:'Display TFT 4.0" SPI colorido (480×320)', nets:['5v','gnd','disp','3v3'],
+    desc:'A tela no canto superior direito da porta branca: mostra o estado das 3 travas, a rede e a conexão MQTT em tempo real. Controlador ST7796S ou ILI9488, dirigido por SPI (lib TFT_eSPI ou LovyanGFX no firmware).',
+    conns:['<b>VCC</b> ← 5V do LM2596 (o módulo tem regulador próprio)','<b>GND</b> → barramento GND','<b>CS</b> ← GPIO15 · <b>DC</b> ← GPIO2 · <b>RESET</b> ← GPIO4','<b>SDI (MOSI)</b> ← GPIO23 · <b>SCK</b> ← GPIO18','<b>LED</b> (backlight) ← 3V3 — ou GPIO32 com PWM p/ dimerizar','<b>SDO</b>: sem uso — a tela só recebe dados']},
+  rele:    {name:'Módulo relé 4 canais (optoacoplado)', nets:['sig1','sig2','sig3','3v3','5v','gnd','12v','lock1','lock2','lock3'],
     desc:'A ponte entre a lógica (3,3V) e a potência (12V). Ativo em nível baixo. Os ímãs vão no contato NC: trancado por padrão sem gastar bobina.',
-    conns:['<b>VCC</b> ← ESP32 3V3 · <b>GND</b> ← ESP32 GND','<b>JD-VCC</b> ← 5V do LM2596 (jumper removido)','<b>IN1/IN2/IN3</b> ← GPIO23/22/21','<b>COM1–3</b> ← barramento +12V','<b>NC1–3</b> → eletroímãs 1–3 (+)','<b>NO</b> e canal 4: sem uso (reserva)']},
-  ima1:    {num:'08', name:'Eletroímã 12V · Porta 1', nets:['lock1','gnd'],
-    desc:'Trava magnética: energizada = porta presa na contra-placa. Sem energia, solta. Fail-safe por natureza.',
-    conns:['<b>(+)</b> ← Relé · NC1 (cabo paralelo 0,75mm²)','<b>(−)</b> → borne GND','<b>D1</b> em paralelo, faixa no (+)','Contra-placa parafusada na folha da porta, ímã no batente.']},
-  ima2:    {num:'09', name:'Eletroímã 12V · Porta 2', nets:['lock2','gnd'],
-    desc:'Trava magnética da Porta 2 — mesmo esquema da Porta 1, no canal 2 do relé.',
+    conns:['<b>VCC</b> ← ESP32 3V3 · <b>GND</b> ← ESP32 GND','<b>JD-VCC</b> ← 5V do LM2596 (jumper removido)','<b>IN1/IN2/IN3</b> ← GPIO22/21/16','<b>COM1–3</b> ← barramento +12V','<b>NC1–3</b> → eletroímãs 1–3 (+)','<b>NO</b> e canal 4: sem uso (reserva)']},
+  ima1:    {name:'Eletroímã 12V · Porta 1 (vitrine superior)', nets:['lock1','gnd'],
+    desc:'Trava magnética da porta de acrílico de cima: energizada = porta presa na contra-placa. Sem energia, solta. Fail-safe por natureza. Fica no montante frontal esquerdo (lado oposto às dobradiças).',
+    conns:['<b>(+)</b> ← Relé · NC1 (cabo paralelo 0,75mm²)','<b>(−)</b> → borne GND','<b>D1</b> em paralelo, faixa no (+)','Contra-placa parafusada no acrílico, ímã no montante do armário.']},
+  ima2:    {name:'Eletroímã 12V · Porta 2 (vitrine do meio)', nets:['lock2','gnd'],
+    desc:'Trava magnética da porta de acrílico do meio — mesmo esquema da Porta 1, no canal 2 do relé.',
     conns:['<b>(+)</b> ← Relé · NC2','<b>(−)</b> → borne GND','<b>D2</b> em paralelo, faixa no (+)']},
-  ima3:    {num:'10', name:'Eletroímã 12V · Porta 3', nets:['lock3','gnd'],
-    desc:'Trava magnética da Porta 3 — canal 3 do relé.',
+  ima3:    {name:'Eletroímã 12V · Porta 3 (gaveta com rodinhas)', nets:['lock3','gnd'],
+    desc:'Trava magnética da gaveta — canal 3 do relé. Montado no fundo do vão inferior; a contra-placa vai na traseira da gaveta, segurando-a encaixada.',
     conns:['<b>(+)</b> ← Relé · NC3','<b>(−)</b> → borne GND','<b>D3</b> em paralelo, faixa no (+)']},
-  d1:      {num:'11', name:'Diodo flyback D1 · 1N4007', nets:['lock1','gnd'],
+  d1:      {name:'Diodo flyback D1 · 1N4007', nets:['lock1','gnd'],
     desc:'Absorve o pico de tensão reversa da bobina do ímã 1 quando o relé corta os 12V. Protege contatos e o ESP32 contra ruído.',
     conns:['<b>Catodo (faixa)</b> → terminal (+) do ímã 1','<b>Anodo</b> → terminal (−) do ímã 1','⚠ Invertido = curto-circuito da fonte.']},
-  d2:      {num:'12', name:'Diodo flyback D2 · 1N4007', nets:['lock2','gnd'],
+  d2:      {name:'Diodo flyback D2 · 1N4007', nets:['lock2','gnd'],
     desc:'Proteção da bobina do ímã 2 — idêntico ao D1.',
     conns:['<b>Catodo (faixa)</b> → (+) do ímã 2','<b>Anodo</b> → (−) do ímã 2']},
-  d3:      {num:'13', name:'Diodo flyback D3 · 1N4007', nets:['lock3','gnd'],
+  d3:      {name:'Diodo flyback D3 · 1N4007', nets:['lock3','gnd'],
     desc:'Proteção da bobina do ímã 3 — idêntico ao D1.',
     conns:['<b>Catodo (faixa)</b> → (+) do ímã 3','<b>Anodo</b> → (−) do ímã 3']},
-  cabos:   {num:'14', name:'Fiação: jumpers + cabo paralelo', nets:[], virtual:true,
-    desc:'Jumpers fêmea-fêmea para os sinais ESP32↔relé; cabo paralelo 0,75mm² para os trechos até as portas (aguenta a corrente e a distância com folga).',
-    conns:['Sinais e alimentação lógica: jumpers','Trechos relé→ímã e ímã→GND: cabo paralelo','Emendas: Wago ou borne — nada de fita isolante solta.']},
-  caixa:   {num:'15', name:'Caixa de passagem (invólucro)', nets:[], virtual:true,
-    desc:'Abriga fonte de sinal de poeira, dedos e puxões: ESP32, relé, LM2596 e bornes ficam dentro; só o cabo paralelo sai para as portas.',
-    conns:['Fixe as placas com parafusos/espaçadores, não soltas.','Deixe folga de ventilação — a fonte e o LM2596 esquentam.']}
+  cabos:   {name:'Fiação: jumpers + cabo paralelo', nets:[], virtual:true,
+    desc:()=>'Jumpers fêmea-fêmea para os sinais ESP32↔relé'+(cfg.tft?', o chicote do display':'')+(optOn('lte')?' e a UART do modem':'')+'; cabo paralelo 0,75mm² para os trechos até as travas (aguenta a corrente com folga).',
+    conns:['Sinais e alimentação lógica: jumpers',{t:'SPI do display: jumpers; chicote com laço de folga no lado das dobradiças p/ a porta abrir',opt:'tft'},{t:'UART do modem: jumpers curtos (≤15cm) — fio comprido a 115200 pega ruído',opt:'lte'},'Trechos relé→ímã e ímã→GND: cabo paralelo','Emendas: Wago ou borne — nada de fita isolante solta.']},
+  caixa:   {name:'Compartimento de equipamentos (porta branca)', nets:[], virtual:true,
+    desc:()=>'O terceiro vão do armário: fonte, LM2596, ESP32, relé'+(optOn('lte')?', modem 4G':'')+' e Wagos montados no piso do compartimento'+(cfg.tft?', com a tela embutida na própria porta':'')+'. Protegido de poeira, dedos e puxões.',
+    conns:['Fixe as placas com parafusos/espaçadores ou fita dupla-face de espuma.','Fure passagens discretas nas prateleiras p/ os cabos das travas (cima: vitrines / baixo: gaveta).',{t:'Antena LTE colada no painel de fundo, longe da fonte e dos ímãs.',opt:'lte'},'Deixe folga de ventilação — a fonte e o LM2596 esquentam.']}
 };
 
 /* ============================================================
@@ -791,24 +1227,26 @@ const SVGNS='http://www.w3.org/2000/svg';
 function el(tag,attrs,parent){const e=document.createElementNS(SVGNS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
 function netColor(net){return net?NETS[net].color:'#c9a227';}
 
-const ESP_LEFT =[{n:'EN'},{n:'VP'},{n:'VN'},{n:'D34'},{n:'D35'},{n:'D32'},{n:'D33'},{n:'D25'},{n:'D26'},{n:'D27'},{n:'D14'},{n:'D12'},{n:'D13'},{n:'GND',net:'gnd'},{n:'VIN',net:'5v'}];
-const ESP_RIGHT=[{n:'D23',net:'sig1'},{n:'D22',net:'sig2'},{n:'TX0'},{n:'RX0'},{n:'D21',net:'sig3'},{n:'D19'},{n:'D18'},{n:'D5'},{n:'TX2'},{n:'RX2'},{n:'D4'},{n:'D2'},{n:'D15'},{n:'GND',net:'gnd'},{n:'3V3',net:'3v3'}];
+const ESP_LEFT =[{n:'EN'},{n:'VP'},{n:'VN'},{n:'D34'},{n:'D35'},{n:'D32'},{n:'D33',net:'lte',opt:'lte'},{n:'D25',net:'lte',opt:'lte'},{n:'D26',net:'lte',opt:'lte'},{n:'D27',net:'lte',opt:'lte'},{n:'D14'},{n:'D12'},{n:'D13'},{n:'GND',net:'gnd'},{n:'VIN',net:'5v'}];
+const ESP_RIGHT=[{n:'D23',net:'disp',opt:'tft'},{n:'D22',net:'sig1'},{n:'TX0'},{n:'RX0'},{n:'D21',net:'sig2'},{n:'D19'},{n:'D18',net:'disp',opt:'tft'},{n:'D5'},{n:'TX2'},{n:'RX2',net:'sig3'},{n:'D4',net:'disp',opt:'tft'},{n:'D2',net:'disp',opt:'tft'},{n:'D15',net:'disp',opt:'tft'},{n:'GND',net:'gnd'},{n:'3V3',net:'3v3'}];
 
-(function drawEspPins(){
+function drawEspPins(){
   const g=document.getElementById('esp-pins');
+  g.innerHTML='';
+  const useNet=p=>(p.net&&optOn(p.opt||''))?p.net:null;
   ESP_LEFT.forEach((p,i)=>{
-    const y=350+i*30;
+    const y=350+i*30, net=useNet(p);
     el('line',{x1:552,y1:y,x2:560,y2:y,stroke:'#8a6d12','stroke-width':2},g);
-    el('rect',{x:544,y:y-4.5,width:9,height:9,class:'pin-sq',stroke:p.net?netColor(p.net):'#8a6d12','stroke-width':p.net?2:0.8},g);
-    el('text',{x:566,y:y+3.5,'font-size':9,class:'silk-dim',fill:p.net?netColor(p.net):'#94a1af','font-weight':p.net?'700':'400'},g).textContent=p.n;
+    el('rect',{x:544,y:y-4.5,width:9,height:9,class:'pin-sq',stroke:net?netColor(net):'#8a6d12','stroke-width':net?2:0.8},g);
+    el('text',{x:566,y:y+3.5,'font-size':9,class:'silk-dim',fill:net?netColor(net):'#94a1af','font-weight':net?'700':'400'},g).textContent=p.n;
   });
   ESP_RIGHT.forEach((p,i)=>{
-    const y=350+i*30;
+    const y=350+i*30, net=useNet(p);
     el('line',{x1:760,y1:y,x2:768,y2:y,stroke:'#8a6d12','stroke-width':2},g);
-    el('rect',{x:767,y:y-4.5,width:9,height:9,class:'pin-sq',stroke:p.net?netColor(p.net):'#8a6d12','stroke-width':p.net?2:0.8},g);
-    el('text',{x:754,y:y+3.5,'font-size':9,class:'silk-dim','text-anchor':'end',fill:p.net?netColor(p.net):'#94a1af','font-weight':p.net?'700':'400'},g).textContent=p.n;
+    el('rect',{x:767,y:y-4.5,width:9,height:9,class:'pin-sq',stroke:net?netColor(net):'#8a6d12','stroke-width':net?2:0.8},g);
+    el('text',{x:754,y:y+3.5,'font-size':9,class:'silk-dim','text-anchor':'end',fill:net?netColor(net):'#94a1af','font-weight':net?'700':'400'},g).textContent=p.n;
   });
-})();
+}
 
 const RELE_HDR=[{n:'GND',net:'gnd',y:380},{n:'IN1',net:'sig1',y:420},{n:'IN2',net:'sig2',y:460},{n:'IN3',net:'sig3',y:500},{n:'IN4',y:540},{n:'VCC',net:'3v3',y:580}];
 (function drawRelePins(){
@@ -851,7 +1289,9 @@ const RELE_HDR=[{n:'GND',net:'gnd',y:380},{n:'IN1',net:'sig1',y:420},{n:'IN2',ne
   const hits=el('g',{id:'wire-hits'});
   wiresG.parentNode.insertBefore(hits,wiresG.nextSibling);
   wiresG.querySelectorAll('path.wire').forEach(p=>{
-    const h=el('path',{d:p.getAttribute('d'),class:'wire-hit','data-net':p.dataset.net},hits);
+    const a={d:p.getAttribute('d'),class:'wire-hit','data-net':p.dataset.net};
+    if(p.dataset.opt)a['data-opt']=p.dataset.opt;
+    el('path',a,hits);
   });
 })();
 
@@ -868,16 +1308,18 @@ function clearActive(){
   document.querySelectorAll('#complist-ol li.hot,#legend .row.hot').forEach(e=>e.classList.remove('hot'));
 }
 function activateNet(net){
+  if(!optOn(NETS[net].opt))return;
   svg.querySelectorAll('.wire[data-net="'+net+'"],.dot[data-net="'+net+'"]').forEach(e=>e.classList.add('active'));
   const row=document.querySelector('#legend .row[data-net="'+net+'"]');
   if(row)row.classList.add('hot');
 }
 function showComp(id){
-  const c=COMPS[id]; if(!c)return;
+  const c=COMPS[id]; if(!c||!optOn(c.opt))return;
   clearActive();
-  insp.t.textContent=c.num+' · '+c.name;
-  insp.d.innerHTML=c.desc;
-  insp.l.innerHTML=c.conns.map(x=>'<li>'+x+'</li>').join('');
+  insp.t.textContent=c.num+' · '+txt(c.name);
+  insp.d.innerHTML=txt(c.desc);
+  const conns=txt(c.conns).filter(x=>typeof x==='string'||optOn(x.opt)).map(x=>typeof x==='string'?x:x.t);
+  insp.l.innerHTML=conns.map(x=>'<li>'+x+'</li>').join('');
   const li=document.querySelector('#complist-ol li[data-id="'+id+'"]');
   if(li)li.classList.add('hot');
   if(c.virtual)return;
@@ -887,18 +1329,18 @@ function showComp(id){
   c.nets.forEach(activateNet);
 }
 function showNet(net){
-  const n=NETS[net]; if(!n)return;
+  const n=NETS[net]; if(!n||!optOn(n.opt))return;
   clearActive();
   svg.classList.add('probing');
   activateNet(net);
   for(const id in COMPS){
-    if(COMPS[id].nets.includes(net)){
+    if(optOn(COMPS[id].opt)&&COMPS[id].nets.includes(net)){
       const g=svg.querySelector('.comp[data-id="'+id+'"]');
       if(g)g.classList.add('active');
     }
   }
   insp.t.textContent=n.name;
-  insp.d.innerHTML=n.desc;
+  insp.d.innerHTML=txt(n.desc);
   insp.l.innerHTML='';
 }
 function resetInspector(){
@@ -936,25 +1378,31 @@ svg.addEventListener('click',e=>{
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){setPinned(null);resetInspector();}});
 
-/* lista de componentes */
-(function buildList(){
+/* lista de componentes (renumerada conforme a configuração) */
+function buildList(){
   const ol=document.getElementById('complist-ol');
+  ol.innerHTML='';
+  let n=0;
   for(const id in COMPS){
     const c=COMPS[id];
+    if(!optOn(c.opt))continue;
+    c.num=String(++n).padStart(2,'0');
     const li=document.createElement('li');
     li.dataset.id=id;
-    li.innerHTML='<span class="q">'+c.num+'</span><span>'+c.name+'</span>';
+    li.innerHTML='<span class="q">'+c.num+'</span><span>'+txt(c.name)+'</span>';
     li.addEventListener('pointerenter',()=>{if(!pinned)showComp(id);});
     li.addEventListener('pointerleave',()=>{if(!pinned)resetInspector();});
     li.addEventListener('click',()=>{setPinned({k:'c',id});showComp(id);});
     ol.appendChild(li);
   }
-})();
+}
 
 /* legenda de redes */
-(function buildLegend(){
+function buildLegend(){
   const box=document.getElementById('legend');
+  box.querySelectorAll('.row').forEach(r=>r.remove());
   for(const net in NETS){
+    if(!optOn(NETS[net].opt))continue;
     const r=document.createElement('div');
     r.className='row';r.dataset.net=net;
     r.innerHTML='<span class="sw" style="background:'+NETS[net].color+'"></span><span>'+NETS[net].name+'</span>';
@@ -963,7 +1411,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){setPinned(null);res
     r.addEventListener('click',()=>{setPinned({k:'n',id:net});showNet(net);});
     box.appendChild(r);
   }
-})();
+}
 
 /* ============================================================
    ABAS 2D / 3D / LISTA DE COMPRAS
@@ -995,23 +1443,26 @@ tL.addEventListener('click',()=>selectTab('c'));
 const SHOP_ITEMS=[
   {id:'esp32',grp:'nucleo',name:'ESP32 DevKit V1 (30 pinos)',
    spec:'Wi-Fi 2,4GHz + Bluetooth · chip ESP-WROOM-32 · barramento duplo de pinos',
-   why:'É o cérebro: assina os tópicos MQTT e comanda os 3 canais do relé.'},
+   why:()=>'É o cérebro: assina os tópicos MQTT e comanda os 3 canais do relé'+(optOn('lte')?' — e conversa com o modem 4G pela UART1':'')+'.'},
   {id:'rele',grp:'nucleo',name:'Módulo relé 4 canais 5V',
    spec:'Optoacoplado · ativo em NÍVEL BAIXO · bornes de parafuso NO/COM/NC · header JD-VCC destacável',
    why:'4 canais mesmo usando só 3 — o 4º fica de reserva/expansão.'},
   {id:'lm2596',grp:'nucleo',name:'Conversor step-down LM2596',
    spec:'Módulo ajustável com trimpot (não o fixo de 5V) · entrada até 35V',
-   why:'Abaixa os 12V da fonte para os 5V que alimentam ESP32 e bobinas do relé.'},
+   why:()=>'Abaixa os 12V da fonte para os 5V que alimentam ESP32 e bobinas do relé'+(cfg.tft?' e a tela':'')+'.'},
+  {id:'display',grp:'nucleo',opt:'tft',name:'Tela TFT 4.0" SPI colorida — ✔ você já tem',
+   spec:'ST7796S ou ILI9488 · 480×320 · SPI · VCC 5V (regulador on-board) · vai embutida na porta branca',
+   why:'Mostra o estado das 3 travas, a rede e o MQTT na frente do armário. Já está em mãos — é só fiar (8 vias).'},
 
   {id:'fonte',grp:'potencia',name:'Fonte chaveada 12V DC',
-   spec:'Mínimo 3A (36W) · bivolt 100–240V~ · saída plugue P4 (5,5×2,1mm)',
-   why:'3A e não 2A: com os 3 ímãs a plena carga + ESP32 + relés, 2A fica no limite.'},
+   spec:()=>(optOn('lte')?'Mínimo 5A (60W)':'Mínimo 3A (36W)')+' · bivolt 100–240V~ · saída plugue P4 (5,5×2,1mm)',
+   why:()=>optOn('lte')?'5A: além dos 3 ímãs + ESP32 + relés, o modem 4G puxa rajadas de ~1A referidas a 12V.':'3A e não 2A: com os 3 ímãs a plena carga + ESP32 + relés, 2A fica no limite.'},
   {id:'p4',grp:'potencia',name:'Conector P4 fêmea com borne',
    spec:'Jack de 5,5×2,1mm para painel, com 2 parafusos de saída',
    why:'Ponte entre o plugue da fonte e os barramentos de distribuição.'},
   {id:'wago',grp:'potencia',name:'Blocos de conexão Wago 221',
-   spec:'Alavanca laranja · pelo menos 2 blocos de 3–5 vias (um para +12V, um para GND)',
-   why:'Distribui +12V e GND para LM2596, relé e as 3 travas sem emenda solta.'},
+   spec:()=>'Alavanca laranja · pelo menos 2 blocos de '+(optOn('lte')?'5':'3–5')+' vias (um para +12V, um para GND)',
+   why:()=>'Distribui +12V e GND para LM2596'+(optOn('lte')?' (os dois)':'')+', relé e as 3 travas sem emenda solta.'},
 
   {id:'ima',grp:'travas',name:'Fechadura eletroímã 12V · 60kgf+',
    spec:'Força de retenção mínima 60kgf (NÃO confundir com os modelos de 2,5–5kgf para armário/portinhola)',
@@ -1025,197 +1476,468 @@ const SHOP_ITEMS=[
 
   {id:'caixa',grp:'consumiveis',name:'Caixa de passagem plástica',
    spec:'Tamanho 4×4" ou maior, com tampa · uso interno',
-   why:'Abriga LM2596, ESP32, relé e os Wagos num único ponto, longe de poeira/toque.'},
+   why:()=>'Abriga LM2596, ESP32, relé'+(optOn('lte')?', modem':'')+' e os Wagos num único ponto, longe de poeira/toque.'},
   {id:'cabo-fino',grp:'consumiveis',name:'Cabo flexível fino (sinal)',
    spec:'26–24 AWG, algumas cores · uns 3–5m',
-   why:'Liga GPIO23/22/21 do ESP32 aos IN1/IN2/IN3 do relé.'},
+   why:()=>'Liga GPIO22/21/16 do ESP32 aos IN1/IN2/IN3 do relé'+(cfg.tft?', o chicote da tela':'')+(optOn('lte')?' e a UART do modem':'')+'.'},
   {id:'cabo-grosso',grp:'consumiveis',name:'Cabo flexível 18–20 AWG (potência)',
    spec:'2 vias · metragem = 2× a distância da caixa até a porta mais longe, ×3 portas',
    why:'Leva os 12V chaveados do COM/NC do relé até cada eletroímã — não usar fio fino aqui.'},
   {id:'fixacao',grp:'consumiveis',name:'Parafusos, buchas e fita isolante',
    spec:'Buchas compatíveis com o material do batente (madeira/alvenaria) · fita ou termorretrátil',
    why:'Fixação física da fechadura e isolamento das emendas fora da caixa.'},
+
+  {id:'modem',grp:'lte',opt:'lte',name:'Módulo 4G LTE Cat.1 SIMCom A7672SA (breakout)',
+   spec:'Placa com entrada 5V, conversor de nível UART 3,3V, slot nano-SIM e conector IPEX (ou SMA) · versão A7672SA-FASE (bandas do Brasil: B1/B3/B5/B7/B8/B28)',
+   why:'Coloca a ESP32 na internet pelo chip — sem depender do Wi-Fi da casa.'},
+  {id:'antena',grp:'lte',opt:'lte',name:'Antena LTE 4G FPC adesiva com cabo IPEX',
+   spec:'700–2700MHz · cabo IPEX (u.FL) de 10–15cm · se o módulo for SMA, pigtail IPEX→SMA',
+   why:'Sem antena o modem não registra na rede; a FPC cola no painel de fundo do armário.'},
+  {id:'sim',grp:'lte',opt:'lte',name:'Chip SIM de dados (nano)',
+   spec:'Plano M2M/IoT ou pré-pago com dados · anote o APN da operadora para o firmware',
+   why:'O consumo é pequeno (MQTT + keepalive): poucos MB por mês.'},
+  {id:'lm2596b',grp:'lte',opt:'lte',name:'Conversor step-down LM2596 (2º, só do modem)',
+   spec:'Módulo ajustável com trimpot · igual ao do núcleo · ajustado em 5,0V',
+   why:'Fonte de 5V/2A exclusiva do A7672SA — as rajadas do LTE não passam pelo trilho do ESP32.'},
+  {id:'cap',grp:'lte',opt:'lte',name:'Capacitor eletrolítico 1000µF / 16V',
+   spec:'Radial, baixo ESR · vai entre VIN e GND, colado no modem',
+   why:'Segura a tensão nas rajadas de transmissão; sem ele o modem reinicia.'},
 ];
 
-(function buildShoppingList(){
+let shopSaved={};
+try{shopSaved=JSON.parse(localStorage.getItem('shop-checklist')||'{}');}catch(e){shopSaved={};}
+function shopVisible(){return SHOP_ITEMS.filter(it=>optOn(it.opt));}
+function renderShopping(){
   const groups={};
-  SHOP_ITEMS.forEach(it=>(groups[it.grp]=groups[it.grp]||[]).push(it));
-  let saved={};
-  try{saved=JSON.parse(localStorage.getItem('shop-checklist')||'{}');}catch(e){saved={};}
-
-  function render(){
-    Object.keys(groups).forEach(g=>{
-      const host=document.getElementById('grp-'+g);
-      if(!host)return;
-      host.innerHTML='';
-      groups[g].forEach(it=>{
-        const done=!!saved[it.id];
-        const row=document.createElement('label');
-        row.className='shop-item'+(done?' done':'');
-        row.innerHTML=`<input type="checkbox" ${done?'checked':''}>
-          <div>
-            <div class="it-name">${it.name}</div>
-            <div class="it-spec">${it.spec}</div>
-            <div class="it-why"><b>por quê:</b> ${it.why}</div>
-          </div>
-          <span class="qty">${it.grp==='travas'?'× 3':'× 1'}</span>`;
-        row.querySelector('input').addEventListener('change',e=>{
-          saved[it.id]=e.target.checked;
-          localStorage.setItem('shop-checklist',JSON.stringify(saved));
-          row.classList.toggle('done',e.target.checked);
-          updateProgress();
-        });
-        host.appendChild(row);
+  shopVisible().forEach(it=>(groups[it.grp]=groups[it.grp]||[]).push(it));
+  document.querySelectorAll('.shop-group [id^="grp-"]').forEach(h=>h.innerHTML='');
+  Object.keys(groups).forEach(g=>{
+    const host=document.getElementById('grp-'+g);
+    if(!host)return;
+    groups[g].forEach(it=>{
+      const done=!!shopSaved[it.id];
+      const row=document.createElement('label');
+      row.className='shop-item'+(done?' done':'');
+      row.innerHTML=`<input type="checkbox" ${done?'checked':''}>
+        <div>
+          <div class="it-name">${txt(it.name)}</div>
+          <div class="it-spec">${txt(it.spec)}</div>
+          <div class="it-why"><b>por quê:</b> ${txt(it.why)}</div>
+        </div>
+        <span class="qty">${it.grp==='travas'?'× 3':'× 1'}</span>`;
+      row.querySelector('input').addEventListener('change',e=>{
+        shopSaved[it.id]=e.target.checked;
+        try{localStorage.setItem('shop-checklist',JSON.stringify(shopSaved));}catch(err){}
+        row.classList.toggle('done',e.target.checked);
+        updateShopProgress();
       });
+      host.appendChild(row);
     });
-  }
-  function updateProgress(){
-    const total=SHOP_ITEMS.length;
-    const done=SHOP_ITEMS.filter(it=>saved[it.id]).length;
-    document.getElementById('shop-count').textContent=done+'/'+total;
-    document.getElementById('shop-bar').style.width=(done/total*100)+'%';
-  }
-  render();updateProgress();
-})();
+  });
+  updateShopProgress();
+}
+function updateShopProgress(){
+  const vis=shopVisible();
+  const total=vis.length;
+  const done=vis.filter(it=>shopSaved[it.id]).length;
+  document.getElementById('shop-count').textContent=done+'/'+total;
+  document.getElementById('shop-bar').style.width=(total?done/total*100:0)+'%';
+}
+
+/* ============================================================
+   APLICAR CONFIGURAÇÃO — tudo que muda com os toggles
+============================================================ */
+function renumberTable(){
+  let n=0;
+  document.querySelectorAll('.conn-table tbody tr').forEach(tr=>{
+    if(tr.offsetParent===null)return;
+    tr.querySelector('td').textContent=String(++n).padStart(2,'0');
+  });
+}
+function renumberDocs(){
+  let n=0;
+  document.querySelectorAll('section.doc h3[data-t]').forEach(h=>{
+    if(h.offsetParent===null)return;
+    h.textContent=(++n)+' · '+h.dataset.t;
+  });
+}
+function firmwareFlags(){
+  return '#define HAS_TFT     '+(cfg.tft?1:0)+'\n#define NET_MODE    '+({wifi:'NET_WIFI',dual:'NET_DUAL',lte:'NET_LTE'}[cfg.net])+'\n#define LTE_HOTSPOT '+(cfg.ap?1:0);
+}
+function renderCfgCard(){
+  const lte=optOn('lte');
+  const pins=['22/21/16 → relés'];
+  if(cfg.tft)pins.push('23/18/15/2/4 → tela');
+  if(lte)pins.push('26/27/25/33 → modem');
+  const rows=[
+    ['Tela',cfg.tft?'TFT 4" SPI na porta branca':'sem tela — status pelo MQTT'],
+    ['Rede',NET_NAME[cfg.net]],
+    ['Hotspot',cfg.ap?'ligado · SSID Acesso-Armario':(cfg.net==='lte'?'desligado':'— (só no modo "só 4G")')],
+    ['GPIOs',pins.join(' · ')],
+    ['Fonte',lte?'12V / 5A · 2× LM2596':'12V / 3A · 1× LM2596'],
+    ['Consumo',(lte?'≈1,5A típico · picos de 2,5A':'≈1,4A típico')+(cfg.tft?' (+0,05A da tela)':'')+' em 12V'],
+    ['Compras',shopVisible().length+' itens na lista']
+  ];
+  document.getElementById('cfg-dl').innerHTML=rows.map(r=>'<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>').join('');
+  document.getElementById('cfg-flags').textContent=firmwareFlags();
+  document.getElementById('shop-variant').innerHTML='Variante: <b>'+(cfg.tft?'com tela TFT':'sem tela')+'</b> · <b>'+NET_NAME[cfg.net]+'</b>'+(cfg.net==='lte'?' · hotspot <b>'+(cfg.ap?'ligado':'desligado')+'</b>':'');
+}
+const HINTS={
+  wifi:'Montagem original: a ESP32 entra no Wi-Fi 2,4GHz da casa e fala com o broker MQTT por ele. Nenhum modem.',
+  dual:'A ESP32 usa o Wi-Fi da casa. Se ficar sem rede ou sem broker, liga o <b>A7672SA</b> e continua pelo 4G — mesmos tópicos, mesmo broker.',
+  lte:'Sem Wi-Fi da casa: só a ESP32 e o modem. Com o <b>hotspot</b> ligado, a própria ESP32 emite o SSID <b>Acesso-Armario</b> e repassa o tráfego pelo 4G (NAT) — lento, mas abre as portas pela rede local.'
+};
+const NETLABELS={
+  wifi:['Wi-Fi da casa · 2,4GHz','roteador → internet → broker MQTT'],
+  dual:['Wi-Fi da casa · 4G de reserva','se o Wi-Fi cair, o A7672SA assume'],
+  lte:['só 4G · sem Wi-Fi da casa','A7672SA → operadora → broker MQTT'],
+  ap:['hotspot Acesso-Armario','celular → ESP32 → NAT → 4G']
+};
+function applyConfig(){
+  if(cfg.net!=='lte')cfg.ap=false;
+  OPTS.forEach(o=>document.body.classList.toggle('no-'+o,!optOn(o)));
+  document.querySelectorAll('.seg').forEach(seg=>{
+    const k=seg.dataset.key;
+    seg.querySelectorAll('button').forEach(b=>{
+      const cur=k==='net'?cfg.net:(cfg[k]?'1':'0');
+      b.classList.toggle('on',b.dataset.val===cur);
+      b.setAttribute('aria-pressed',String(b.dataset.val===cur));
+      if(k==='ap')b.disabled=cfg.net!=='lte';
+    });
+  });
+  document.getElementById('cfg-hint').innerHTML=HINTS[cfg.net];
+  document.getElementById('hero-net').textContent=({
+    wifi:'Conectividade pelo Wi-Fi 2,4GHz da casa.',
+    dual:'Conectividade pelo Wi-Fi da casa, com o modem 4G A7672SA assumindo se a rede cair.',
+    lte:'Sem Wi-Fi da casa: só a ESP32 e o modem 4G A7672SA'+(cfg.ap?', com a própria ESP32 emitindo o hotspot Acesso-Armario.':'.')
+  })[cfg.net];
+  /* esquema 2D */
+  const lte=optOn('lte');
+  svg.setAttribute('viewBox','0 0 1560 '+(cfg.tft?1210:985));   // sem a tela, o esquema encolhe
+  document.getElementById('fonte-rating').textContent='12V ⎓ '+(lte?'5A':'3A');
+  document.getElementById('fonte-out').textContent='SAÍDA 12V DC · '+(lte?'60W':'36W')+' máx';
+  const nl=cfg.ap?NETLABELS.ap:NETLABELS[cfg.net];
+  document.getElementById('net-label').textContent=nl[0];
+  document.getElementById('net-label2').textContent=nl[1];
+  document.getElementById('net-waves').style.stroke=cfg.ap?'var(--amber)':'#38bdf8';
+  document.getElementById('net-label').style.fill=cfg.ap?'var(--amber)':'#38bdf8';
+  drawEspPins();
+  buildLegend();
+  buildList();
+  setPinned(null);resetInspector();
+  /* lista, tabela, textos */
+  renderShopping();
+  renumberTable();
+  renumberDocs();
+  renderCfgCard();
+  document.getElementById('flow-link').textContent=cfg.net==='wifi'?'via Wi-Fi':(cfg.net==='dual'?'via Wi-Fi (ou 4G)':'via 4G');
+  /* 3D */
+  if(three&&three.applyConfig)three.applyConfig(cfg);
+  /* persistência */
+  const hash='#tft='+(cfg.tft?1:0)+'&net='+cfg.net+'&ap='+(cfg.ap?1:0);
+  if(location.hash!==hash)history.replaceState(null,'',hash);
+  try{localStorage.setItem(CFG_KEY,JSON.stringify(cfg));}catch(e){}
+}
+document.querySelectorAll('.seg').forEach(seg=>{
+  seg.addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b||b.disabled)return;
+    const k=seg.dataset.key, v=b.dataset.val;
+    if(k==='net')cfg.net=v; else cfg[k]=v==='1';
+    applyConfig();
+  });
+});
+document.getElementById('cfg-copy').addEventListener('click',()=>{
+  const btn=document.getElementById('cfg-copy');
+  const done=()=>{btn.textContent='copiado ✔';setTimeout(()=>btn.textContent='copiar flags do firmware',1500);};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(firmwareFlags()).then(done,()=>{});
+  else{const ta=document.createElement('textarea');ta.value=firmwareFlags();document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(e){}ta.remove();}
+});
+window.addEventListener('hashchange',()=>{readCfg();applyConfig();});
+readCfg();
+applyConfig();
 
 function load3D(){
   three={onShow(){}};
   const s=document.createElement('script');
   s.src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
-  s.onload=()=>{three=init3D();three.onShow(true);};
+  s.onload=()=>{three=init3D();three.applyConfig(cfg);three.onShow(true);};
   s.onerror=()=>{document.getElementById('hint3d').textContent='não consegui carregar o Three.js (sem internet?) — a aba 2D segue funcionando';};
   document.head.appendChild(s);
 }
 
 /* ============================================================
-   CENA 3D — montagem física simplificada
+   CENA 3D — armário-vitrine real, com sombras, reflexos e as
+   variantes da montagem (tela, modem 4G, hotspot)
 ============================================================ */
 function init3D(){
   const wrap=document.getElementById('three-wrap');
   const labelEl=document.getElementById('label3d');
-  const renderer=new THREE.WebGLRenderer({antialias:true});
+  const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
   renderer.setSize(wrap.clientWidth,wrap.clientHeight);
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.outputEncoding=THREE.sRGBEncoding;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1.05;
   wrap.appendChild(renderer.domElement);
 
   const scene=new THREE.Scene();
   scene.background=new THREE.Color(0x0a0d12);
-  scene.fog=new THREE.Fog(0x0a0d12,90,220);
+  scene.fog=new THREE.Fog(0x0a0d12,340,900);
 
-  const camera=new THREE.PerspectiveCamera(45,wrap.clientWidth/wrap.clientHeight,0.1,500);
+  /* ambiente de estúdio (painéis de luz num cubo escuro) — dá os reflexos
+     no laqueado branco, no acrílico e no vidro do tampo */
+  (function studio(){
+    const pm=new THREE.PMREMGenerator(renderer);
+    const env=new THREE.Scene();
+    env.add(new THREE.Mesh(new THREE.BoxGeometry(600,600,600),new THREE.MeshBasicMaterial({color:0x1a2129,side:THREE.BackSide})));
+    const panel=(w,h,x,y,z,rx,ry,c)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({color:c,side:THREE.DoubleSide}));m.position.set(x,y,z);m.rotation.set(rx,ry,0);env.add(m);};
+    panel(220,120,0,280,0,Math.PI/2,0,0xfff3e2);
+    panel(160,200,-290,120,0,0,Math.PI/2,0xc9dcff);
+    panel(160,200,290,120,0,0,-Math.PI/2,0xffe7c9);
+    panel(260,120,0,140,-290,0,0,0x9fb6d9);
+    scene.environment=pm.fromScene(env,0.04,0.1,1000).texture;
+    pm.dispose();
+  })();
 
-  scene.add(new THREE.HemisphereLight(0xbfd4ff,0x1a1410,0.85));
-  const sun=new THREE.DirectionalLight(0xfff2dd,0.9);
-  sun.position.set(40,60,30);scene.add(sun);
-  const fill=new THREE.DirectionalLight(0x88aaff,0.25);
-  fill.position.set(-40,30,-30);scene.add(fill);
+  const camera=new THREE.PerspectiveCamera(42,wrap.clientWidth/wrap.clientHeight,0.1,600);
 
-  const pickables=[];
+  scene.add(new THREE.HemisphereLight(0xdfe8ff,0x1b1712,0.5));
+  const sun=new THREE.DirectionalLight(0xfff1dc,1.15);
+  sun.position.set(80,150,70);sun.castShadow=true;
+  sun.shadow.mapSize.set(2048,2048);
+  Object.assign(sun.shadow.camera,{left:-110,right:110,top:150,bottom:-30,near:20,far:450});
+  sun.shadow.camera.updateProjectionMatrix();
+  sun.shadow.bias=-0.0005;sun.shadow.normalBias=0.03;
+  scene.add(sun);
+  const fill=new THREE.DirectionalLight(0x8fb2ff,0.35);fill.position.set(-70,60,-50);scene.add(fill);
+  const bulb=new THREE.PointLight(0xffc37a,0.45,90,2);bulb.position.set(0,30,6);scene.add(bulb);
+
+  const pickables=[], tftParts=[], lteParts=[], apParts=[];
   function mat(color,opts){return new THREE.MeshStandardMaterial(Object.assign({color:color,roughness:.7,metalness:.15},opts||{}));}
-  function box(w,h,d,color,x,y,z,label,opts){
-    const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color,opts));
-    m.position.set(x,y,z);
-    if(label){m.userData.label=label;pickables.push(m);}
-    scene.add(m);return m;
-  }
-  function cyl(r,h,color,x,y,z,label){
-    const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,24),mat(color,{metalness:.5,roughness:.4}));
-    m.position.set(x,y,z);
-    if(label){m.userData.label=label;pickables.push(m);}
-    scene.add(m);return m;
-  }
-  function wire(points,hex,label){
+  function acrylMat(color){return new THREE.MeshPhysicalMaterial({color:color,roughness:.06,metalness:0,clearcoat:1,clearcoatRoughness:.05,transparent:true,opacity:.3,envMapIntensity:1.4,side:THREE.DoubleSide,depthWrite:false});}
+  function place(m,x,y,z,label,parent){m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;if(label){m.userData.label=label;pickables.push(m);}(parent||scene).add(m);return m;}
+  function box(w,h,d,color,x,y,z,label,opts,parent){return place(new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color,opts)),x,y,z,label,parent);}
+  function cyl(r,h,color,x,y,z,label,opts,parent){return place(new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,28),mat(color,Object.assign({metalness:.5,roughness:.4},opts||{}))),x,y,z,label,parent);}
+  function wire(points,hex,label,parent){
     const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(p[0],p[1],p[2])));
-    const geo=new THREE.TubeGeometry(curve,40,0.16,8,false);
-    const m=new THREE.Mesh(geo,mat(hex,{roughness:.5}));
-    m.userData.label=label;pickables.push(m);scene.add(m);return m;
+    const m=new THREE.Mesh(new THREE.TubeGeometry(curve,48,0.42,8,false),mat(hex,{roughness:.55,metalness:.05}));
+    m.castShadow=true;m.userData.label=label;pickables.push(m);(parent||scene).add(m);return m;
   }
 
   /* chão */
-  const ground=new THREE.Mesh(new THREE.PlaneGeometry(240,160),mat(0x10141b,{roughness:1,metalness:0}));
-  ground.rotation.x=-Math.PI/2;scene.add(ground);
-  const grid=new THREE.GridHelper(160,32,0x1e2632,0x161d27);
-  grid.position.y=0.02;scene.add(grid);
+  const ground=new THREE.Mesh(new THREE.CircleGeometry(360,72),mat(0x11151c,{roughness:.96,metalness:0}));
+  ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+  const grid=new THREE.GridHelper(520,52,0x1c2430,0x151b25);grid.position.y=0.03;scene.add(grid);
 
-  /* caixa de passagem */
-  box(36,1.5,24,0x262c34,-12,0.75,0,'Caixa de passagem (base)');
-  const wallM={transparent:true,opacity:0.28};
-  box(36,6,0.8,0x3a4350,-12,4.5,-11.6,'Caixa de passagem (parede)',wallM);
-  box(36,6,0.8,0x3a4350,-12,4.5, 11.6,'Caixa de passagem (parede)',wallM);
-  box(0.8,6,24,0x3a4350,-29.6,4.5,0,'Caixa de passagem (parede)',wallM);
-  box(0.8,6,24,0x3a4350, 5.6,4.5,0,'Caixa de passagem (parede)',wallM);
+  /* ======== ARMÁRIO-VITRINE · 50 × 50 × 100 cm (1 unidade = 1 cm) ======== */
+  const WHITE=0xeef1f4, FRAME=0xdde3e9, METAL=0x9aa4b0, DARK=0x14181e;
+  const glossy={roughness:.34,metalness:.02,envMapIntensity:.9};
+  const chrome={metalness:.75,roughness:.28};
 
-  /* fonte 12V (fora da caixa) */
-  box(12,5,7,0x4a545f,-42,2.5,4,'Fonte chaveada 12V · 2A');
-  box(11,0.6,6,0x39424e,-42,5.2,4,'Fonte chaveada 12V · 2A');
+  /* rodapé e pés */
+  box(48,1.2,48,0xe1e6ec,0,0.6,0,'Rodapé do armário',glossy);
+  [[-20,-20],[20,-20],[-20,20],[20,20]].forEach(p=>cyl(1.1,1.2,0x2a3038,p[0],0.6,p[1],null,{roughness:.6}));
 
-  /* P4 + bornes */
-  box(2.6,2.2,2.6,0x14181e,-27,2.7,7,'Conector P4 fêmea com borne');
-  box(3.4,1.8,2.2,0xd8dee6,-22,2.5,7.5,'Borne / Wago · +12V');
-  box(3.4,0.5,2.2,0xff7a1a,-22,3.6,7.5,'Borne / Wago · +12V');
-  box(3.4,1.8,2.2,0xd8dee6,-17.8,2.5,7.5,'Borne / Wago · GND');
-  box(3.4,0.5,2.2,0xff7a1a,-17.8,3.6,7.5,'Borne / Wago · GND');
-
-  /* LM2596 */
-  box(6,0.4,3.8,0x1b3fae,-24,2.2,-4,'Conversor step-down LM2596 (12V→5V)');
-  cyl(1.1,1.2,0x8b93a1,-25.4,3,-4,'LM2596 · indutor');
-  box(1.1,0.9,1.0,0x2a6fdb,-22.2,2.9,-3,'LM2596 · trimpot de ajuste (5,0V)');
-  box(1.6,0.5,2.4,0x0c0f13,-23.6,2.6,-4.4,'LM2596 · CI regulador');
-
-  /* ESP32 */
-  box(5.6,0.4,11,0x14161a,-14,2.2,-1,'ESP32 NodeMCU (30 pinos)');
-  box(3.8,1.0,5,0x9aa7b5,-14,2.9,-3,'ESP32 · blindagem do ESP-WROOM-32');
-  box(2,0.5,1.2,0x39424e,-14,2.6,4.2,'ESP32 · micro-USB');
-  box(0.5,0.5,10.4,0xc9a227,-16.5,2.5,-1,'ESP32 · fileira de pinos (esquerda)');
-  box(0.5,0.5,10.4,0xc9a227,-11.5,2.5,-1,'ESP32 · fileira de pinos (direita: 3V3, GND, GPIO 23/22/21)');
-
-  /* módulo relé */
-  box(9,0.4,9.6,0x1b3fae,-3,2.2,-0.6,'Módulo relé 4 canais (optoacoplado)');
-  const relZ=[-3.9,-1.3,1.3,3.9];
-  relZ.forEach((z,i)=>{
-    box(2.6,1.9,2.2,0x2050b8,-4.2,3.25,z,'Relé canal '+(i+1)+(i<3?' · Porta '+(i+1):' · reserva'));
-    box(1.3,1.5,2.2,0x1c4532,0.6,3.0,z,'Bornes NO/COM/NC · canal '+(i+1));
-  });
-  box(1.6,0.5,1.2,0xc9a227,-6.5,2.6,4.4,'Header JD-VCC (jumper removido → recebe 5V)');
-
-  /* portas + eletroímãs */
-  const doorZ=[-16,0,16];
-  doorZ.forEach((z,i)=>{
-    const n=i+1;
-    box(8,16,0.9,0x5a4030,24,8,z,'Porta '+n);
-    box(10,1.6,2.2,0x333a44,24,17,z,'Batente / suporte do ímã · Porta '+n);
-    box(4.6,1.3,1.7,0xaab4c0,24,15.7,z,'Eletroímã 12V · Porta '+n);
-    box(4.2,0.5,1.3,0xb9c2cd,24,14.8,z,'Contra-placa · Porta '+n);
+  /* estrutura */
+  box(1.6,96,50,WHITE,-24.2,49,0,'Painel lateral esquerdo · armário 50 × 50 × 100 cm',glossy);
+  box(1.6,96,50,WHITE, 24.2,49,0,'Painel lateral direito · armário 50 × 50 × 100 cm',glossy);
+  box(50,96,1.6,WHITE,0,49,-24.2,'Painel de fundo (furo p/ o cabo AC da fonte)',glossy);
+  box(1.8,96,1.8,FRAME,-23.6,49,23.6,'Montante frontal esquerdo — lado dos eletroímãs');
+  box(1.8,96,1.8,FRAME, 23.6,49,23.6,'Montante frontal direito — lado das dobradiças');
+  /* tampo de vidro com moldura */
+  box(50,2,3.2,FRAME,0,98,23.2,'Moldura do tampo');
+  box(50,2,3.2,FRAME,0,98,-23.2,'Moldura do tampo');
+  box(3.2,2,40,FRAME,-23.4,98,0,'Moldura do tampo');
+  box(3.2,2,40,FRAME, 23.4,98,0,'Moldura do tampo');
+  const glassTop=place(new THREE.Mesh(new THREE.BoxGeometry(43,0.8,43),acrylMat(0xd7ecf5)),0,98,0,'Tampo de vidro');
+  glassTop.castShadow=false;
+  /* prateleiras */
+  box(46.5,1.8,47,WHITE,0,18,-0.5,'Prateleira · piso do compartimento de equipamentos',glossy);
+  box(46.5,1.8,47,WHITE,0,42,-0.5,'Prateleira · piso da vitrine do meio',glossy);
+  box(46.5,1.8,47,WHITE,0,70,-0.5,'Prateleira · piso da vitrine superior',glossy);
+  /* fitas de LED das vitrines (sob a prateleira de cima e sob o tampo) */
+  [[68.6,'Fita de LED da vitrine do meio'],[96.6,'Fita de LED da vitrine superior']].forEach(([y,l])=>{
+    box(42,0.5,1.2,0xfff6e0,0,y,19,l,{emissive:0xfff1cc,emissiveIntensity:.9,roughness:.4});
   });
 
-  /* fios */
-  wire([[-36,3.4,4.5],[-31,3.2,6],[-28.2,2.9,7]],0x4a5563,'Cabo da fonte (12V) → P4');
-  wire([[-25.8,2.9,7],[-24.6,3.3,7.4],[-23.6,3.1,7.5]],0xff5c5c,'+12V · P4 → borne +12V');
-  wire([[-25.8,2.6,7.6],[-21,3.6,8.6],[-18,3.1,8.2],[-17.8,3.1,7.6]],0x93a0b1,'GND · P4 → borne GND');
-  wire([[-21.5,3.2,6.6],[-23.2,3.8,1.2],[-24.6,2.8,-2.2]],0xff5c5c,'+12V · borne → LM2596 IN+');
-  wire([[-17.5,3.2,6.6],[-20,4.0,0.8],[-23.4,2.8,-2.4]],0x93a0b1,'GND · borne → LM2596 IN−');
-  wire([[-23,2.8,-5.7],[-19,3.8,-6.2],[-15.4,2.8,-5.4]],0xffa94d,'+5V · LM2596 OUT+ → ESP32 VIN');
-  wire([[-24.4,2.8,-5.9],[-14,4.6,-7.4],[-6.4,2.9,-4.6]],0xffa94d,'+5V · LM2596 → relé JD-VCC (bobinas)');
-  wire([[-22.6,2.8,-6.1],[-18.4,3.5,-6.5],[-15,2.7,-5.8]],0x93a0b1,'GND · LM2596 OUT− → ESP32 GND');
-  wire([[-11.3,2.9,3.6],[-9.4,3.7,2.2],[-7.6,2.8,1.4]],0xc084fc,'3V3 · ESP32 → relé VCC (lógica)');
-  wire([[-11.3,2.7,3.0],[-9.6,3.4,1.4],[-7.6,2.6,0.4]],0x93a0b1,'GND · ESP32 → relé GND');
-  wire([[-11.3,2.9,-3.6],[-9.4,3.8,-3.4],[-7.6,2.9,-3.3]],0xffd43b,'Sinal · GPIO23 → IN1 (Porta 1)');
-  wire([[-11.3,2.9,-2.6],[-9.4,3.7,-2.2],[-7.6,2.9,-1.8]],0x69db7c,'Sinal · GPIO22 → IN2 (Porta 2)');
-  wire([[-11.3,2.9,-1.6],[-9.4,3.6,-0.9],[-7.6,2.9,-0.4]],0x4dd4f7,'Sinal · GPIO21 → IN3 (Porta 3)');
-  wire([[-21.5,3.4,7.2],[-10,5.6,8.6],[-1,3.6,5],[1.4,3.2,3.2]],0xff5c5c,'+12V · borne → COM1/COM2/COM3');
-  wire([[1.6,3.2,-3.9],[10,8,-13],[21.6,15.7,-16.6]],0xff8fa3,'Trava 1 · NC1 → eletroímã da Porta 1');
-  wire([[1.6,3.2,-1.3],[11,8,-1],[21.6,15.7,-0.6]],0xf0abfc,'Trava 2 · NC2 → eletroímã da Porta 2');
-  wire([[1.6,3.2,1.3],[11,8,11],[21.6,15.7,15.4]],0xffc078,'Trava 3 · NC3 → eletroímã da Porta 3');
-  doorZ.forEach((z,i)=>{
-    wire([[26.4,15.7,z-0.4],[31,7,z],[31,1.6,8],[6,1.4,10],[-17.6,2.9,8.4]],0x93a0b1,'GND · retorno do ímã '+(i+1)+' → borne GND');
+  function boxP(parent,w,h,d,color,x,y,z,label,opts){return box(w,h,d,color,x,y,z,label,opts,parent);}
+
+  /* ---- portas de acrílico (dobradiça à direita, ímã à esquerda) ---- */
+  function acrylicDoor(cy,hgt,name,ledCy){
+    const g=new THREE.Group();
+    g.position.set(22.7,cy,25.0);
+    scene.add(g);
+    const panel=place(new THREE.Mesh(new THREE.BoxGeometry(45.4,hgt,0.7),acrylMat(0xbfe3f2)),-22.7,0,0,name+' — clique para abrir/fechar',g);
+    panel.castShadow=false;
+    /* perfil de alumínio em volta do acrílico */
+    const fr={metalness:.7,roughness:.32};
+    boxP(g,45.4,1,0.9,METAL,-22.7, hgt/2-0.5,0,'Perfil de alumínio da porta',fr);
+    boxP(g,45.4,1,0.9,METAL,-22.7,-hgt/2+0.5,0,'Perfil de alumínio da porta',fr);
+    boxP(g,1,hgt,0.9,METAL,-0.5,0,0,'Perfil de alumínio da porta',fr);
+    boxP(g,1,hgt,0.9,METAL,-44.9,0,0,'Perfil de alumínio da porta',fr);
+    boxP(g,1.2,3,1.5,METAL,0.1,hgt*0.32,-0.3,'Dobradiça',chrome);
+    boxP(g,1.2,3,1.5,METAL,0.1,-hgt*0.32,-0.3,'Dobradiça',chrome);
+    cyl(0.7,1.4,0xcfd6dd,-41,0,0.9,'Puxador',chrome,g).rotation.x=Math.PI/2;
+    boxP(g,4.6,2.2,0.5,0xb9c2cd,-43.2,0,-0.6,'Contra-placa de aço (parafusada no acrílico)',{metalness:.7,roughness:.3});
+    /* eletroímã fixo no montante esquerdo */
+    box(5,2.6,2.4,0x8f99a5,-20.5,ledCy,23.3,'Eletroímã 12V · '+name,{metalness:.65,roughness:.3});
+    const led=box(0.7,0.7,0.3,0x22c55e,-18.6,ledCy+0.9,24.55,null,{emissive:0x15803d});
+    return {g:g,led:led};
+  }
+  const doorTop=acrylicDoor(84,25.5,'Porta 1 · vitrine superior (acrílico)',84);
+  const doorMid=acrylicDoor(56,25.5,'Porta 2 · vitrine do meio (acrílico)',56);
+
+  /* ---- porta branca (compartimento de equipamentos) + display opcional ---- */
+  const doorW=new THREE.Group();
+  doorW.position.set(22.7,30,25.0);
+  scene.add(doorW);
+  const doorWPanel=boxP(doorW,45.4,20.5,1.2,WHITE,-22.7,0,0,'Porta branca · compartimento de equipamentos — clique para abrir',glossy);
+  boxP(doorW,1.2,3,1.5,METAL,0.1,6.5,-0.3,'Dobradiça',chrome);
+  boxP(doorW,1.2,3,1.5,METAL,0.1,-6.5,-0.3,'Dobradiça',chrome);
+  boxP(doorW,1.2,6,1,0xcfd6dd,-43.5,0,1.1,'Puxador',chrome);
+  tftParts.push(boxP(doorW,11.5,8,1,DARK,-7.5,6,1.0,'Display TFT 4.0" SPI — status das portas, rede e MQTT',{roughness:.5}));
+  tftParts.push(boxP(doorW,10,6.6,0.3,0x06131c,-7.5,6,1.6,'Tela 480×320 — PORTA 1 ✓ · PORTA 2 ✓ · GAVETA ✓',{emissive:0x0d3b4f,emissiveIntensity:1.2,roughness:.2}));
+  /* LED de status da placa, visível pela fresta quando não há tela */
+  const boardLed=box(0.6,0.6,0.3,0x60a5fa,-7.5,6,0.7,'LED de status do ESP32 (pisca no MQTT)',{emissive:0x2563eb},doorW);
+  boardLed.userData.noTft=true;
+
+  /* ---- gaveta com rodinhas (Porta 3) ---- */
+  const drawer=new THREE.Group();
+  scene.add(drawer);
+  boxP(drawer,45.4,14.5,1.2,WHITE,0,9.5,24.9,'Gaveta com rodinhas · Porta 3 — clique para abrir/fechar',glossy);
+  boxP(drawer,42,1,42,0xf4f6f8,0,3.5,2,'Fundo da gaveta',{roughness:.4});
+  boxP(drawer,42,8,1,WHITE,0,7.5,-19,'Traseira da gaveta',glossy);
+  boxP(drawer,1,8,42,WHITE,-21,7.5,2,'Lateral da gaveta',glossy);
+  boxP(drawer,1,8,42,WHITE, 21,7.5,2,'Lateral da gaveta',glossy);
+  boxP(drawer,4.5,2.4,0.6,0xb9c2cd,0,13,-20.6,'Contra-placa de aço (na traseira da gaveta)',{metalness:.7,roughness:.3});
+  boxP(drawer,1.4,9,1,0xaab4c0,0,11.5,25.9,'Haste do puxador tipo carrinho',chrome);
+  boxP(drawer,11,1.6,1.6,DARK,0,16.6,25.9,'Puxador tipo carrinho',{roughness:.5});
+  [[-16,-13],[16,-13],[-16,13],[16,13]].forEach((p,i)=>{
+    const w=new THREE.Mesh(new THREE.CylinderGeometry(2,2,1.6,24),mat(DARK,{roughness:.6}));
+    w.rotation.z=Math.PI/2;w.position.set(p[0],2,p[1]);w.castShadow=true;
+    if(i===0){w.userData.label='Rodinha da gaveta';pickables.push(w);}
+    drawer.add(w);
   });
+  /* eletroímã da gaveta, fixo no fundo do vão */
+  box(5,2.6,2.4,0x8f99a5,0,13,-22.2,'Eletroímã 12V · Porta 3 (gaveta) — segura a contra-placa da traseira',{metalness:.65,roughness:.3});
+  const led3=box(0.7,0.7,0.3,0x22c55e,1.8,11.4,-20.9,null,{emissive:0x15803d});
+
+  /* ---- equipamentos (compartimento da porta branca, piso y≈19) ---- */
+  const fonteParts=[
+    box(11,3.4,5.4,0x3d454f,-15,20.6,-14,'Fonte chaveada 12V · 3A',{roughness:.6}),
+    box(10,0.5,4.6,0x39424e,-15,22.5,-14,'Fonte chaveada 12V · 3A')
+  ];
+  box(2.6,2,2.6,DARK,-19,19.9,8,'Conector P4 fêmea (entrada 12V)');
+  box(3.6,1.6,2.2,0xf2f4f7,-19,19.7,2,'Wago 221 · barramento +12V');
+  box(3.6,0.5,2.2,0xff7a1a,-19,20.75,2,'Wago 221 · +12V (alavancas)');
+  box(3.6,1.6,2.2,0xf2f4f7,-14.5,19.7,2,'Wago 221 · barramento GND');
+  box(3.6,0.5,2.2,0xff7a1a,-14.5,20.75,2,'Wago 221 · GND (alavancas)');
+  box(4.4,0.4,2.2,0x1b3fae,-6,19.1,-14,'Conversor LM2596 · 12V→5V (ajustado em 5,0V)');
+  cyl(0.9,1,0x8b93a1,-7.4,19.7,-14,'LM2596 · indutor toroidal');
+  box(0.9,0.8,0.9,0x2a6fdb,-4.6,19.6,-13.4,'LM2596 · trimpot de ajuste');
+  const espBoard=box(2.9,0.4,5.6,0x14161a,0,19.1,-6,'ESP32 NodeMCU — Wi-Fi, MQTT e display');
+  box(2.0,0.8,2.6,0x9aa7b5,0,19.7,-7.2,'ESP32 · módulo ESP-WROOM-32',{metalness:.5});
+  box(7.8,0.4,5.8,0x1b3fae,8,19.1,-6,'Módulo relé 4 canais (ativo-baixo)');
+  [5.2,7.1,9.0,10.9].forEach((x,i)=>{
+    box(1.6,1.6,2.0,0x2050b8,x,20.1,-7,'Relé canal '+(i+1)+(i<3?' · Porta '+(i+1):' · reserva'));
+  });
+  box(7.4,1.2,1.4,0x1c7a3d,8,19.7,-3.4,'Bornes NO/COM/NC dos 4 canais');
+
+  /* ---- modem 4G (opcional): LM2596 #2, capacitor, A7672SA, antena FPC ---- */
+  lteParts.push(box(4.4,0.4,2.2,0x1b3fae,4,19.1,-15,'Conversor LM2596 #2 · 5,0V só do modem'));
+  lteParts.push(cyl(0.9,1,0x8b93a1,2.6,19.7,-15,'LM2596 #2 · indutor'));
+  lteParts.push(cyl(0.55,1.3,0x1e3a5f,7.4,19.75,-15,'Capacitor 1000µF / 16V no VIN do modem',{roughness:.5,metalness:.2}));
+  lteParts.push(box(5.2,0.4,4.2,0x12241c,13,19.1,-13,'Modem 4G LTE Cat.1 · SIMCom A7672SA (breakout com nível 3,3V)'));
+  lteParts.push(box(2.6,0.5,2.2,0xb6bfca,13.4,19.55,-13.6,'A7672SA · módulo blindado',{metalness:.6,roughness:.35}));
+  lteParts.push(box(1.6,0.3,1.7,0x2a3138,11.4,19.45,-11.8,'Slot nano-SIM (chip de dados)',{roughness:.6}));
+  lteParts.push(box(0.9,0.05,0.9,0xc9a227,11.4,19.62,-11.8,'Chip SIM',{metalness:.8,roughness:.3}));
+  lteParts.push(cyl(0.25,0.35,0xc9a227,14.9,19.45,-11.4,'Conector IPEX da antena',{metalness:.8,roughness:.3}));
+  const lteLed=box(0.5,0.3,0.5,0x3b82f6,11,19.45,-14.3,'LED NET do modem (pisca = registrado na rede)',{emissive:0x1d4ed8});
+  lteParts.push(lteLed);
+  lteParts.push(box(9,2.2,0.15,0x1c1f24,12,30,-23.3,'Antena LTE 4G · FPC adesiva colada no painel de fundo',{roughness:.6}));
+  lteParts.push(box(7.6,0.9,0.05,0xc9a227,12,30,-23.2,'Trilha de cobre da antena',{metalness:.8,roughness:.35}));
+  lteParts.push(wire([[14.9,19.6,-11.4],[16,21,-17],[13.5,26,-22],[12.5,29,-23]],0x1a1d22,'Cabo coaxial IPEX (10–15cm) modem → antena'));
+  lteParts.push(wire([[-18.8,20.3,1],[-8,22.6,-8],[3.4,19.5,-13.9]],0xff5c5c,'+12V · Wago → LM2596 #2 IN+'));
+  lteParts.push(wire([[-14.3,20.3,1],[-6,22.2,-9],[4.6,19.4,-14.1]],0x93a0b1,'GND · Wago → LM2596 #2 IN−'));
+  lteParts.push(wire([[5.8,19.4,-15.6],[8.5,20.4,-15.4],[11.2,19.5,-14.8]],0xf97316,'+5V do modem · LM2596 #2 OUT+ → VIN do A7672SA (1000µF junto)'));
+  lteParts.push(wire([[5.8,19.4,-14.4],[8.5,20.2,-14.2],[11.2,19.5,-13.9]],0x93a0b1,'GND · LM2596 #2 OUT− → GND do modem'));
+  lteParts.push(wire([[-1.2,19.5,-7.6],[-2.5,21.8,-11.5],[6,22.2,-17.5],[11.2,19.6,-12.6]],0x60a5fa,'UART1 · GPIO27→RXD · GPIO26←TXD · GPIO25→PWRKEY · GPIO33→RST (jumpers curtos)'));
+
+  /* ---- hotspot da ESP32 (opcional): anéis de sinal saindo do compartimento ---- */
+  const apRings=[];
+  for(let i=0;i<3;i++){
+    const r=new THREE.Mesh(new THREE.RingGeometry(0.94,1,72),new THREE.MeshBasicMaterial({color:0xffb224,transparent:true,opacity:.6,side:THREE.DoubleSide,depthWrite:false}));
+    r.rotation.x=-Math.PI/2;r.position.set(0,30,-6);r.userData.phase=i/3;
+    scene.add(r);apRings.push(r);apParts.push(r);
+  }
+  const apBeacon=box(1.2,1.2,1.2,0xffb224,0,21.2,-4.6,'Hotspot Wi-Fi da ESP32 · SSID Acesso-Armario · NAT → 4G',{emissive:0xffb224,emissiveIntensity:1.2});
+  apParts.push(apBeacon);
+
+  /* produto em exposição (vitrine superior) */
+  const robo=place(new THREE.Mesh(new THREE.CylinderGeometry(16,16,7,40),mat(0xf2f4f6,{roughness:.35})),0,74.4,0,'Produto em exposição · vitrine superior');
+  place(new THREE.Mesh(new THREE.CylinderGeometry(4.5,4.5,2.6,24),mat(0xe8ebee,{roughness:.3})),0,79.2,0);
+  place(new THREE.Mesh(new THREE.CylinderGeometry(3.4,3.4,0.6,24),mat(DARK,{roughness:.4})),0,80.8,0);
+
+  /* ---- fiação ---- */
+  wire([[0,3,-40],[0,8,-28],[-8,14,-22],[-15,20.2,-16.6]],0x4a5563,'Cabo AC da fonte — entra por furo no painel de fundo');
+  wire([[-15,20.2,-11.4],[-18.5,20.8,-3],[-19,20.2,0.9]],0xff5c5c,'+12V · fonte/P4 → Wago +12V');
+  wire([[-15,19.9,-11.2],[-16.5,21,-4],[-14.5,20.2,0.9]],0x93a0b1,'GND · fonte/P4 → Wago GND');
+  wire([[-18.8,20.3,1],[-12,21.2,-6],[-6.2,19.5,-12.9]],0xff5c5c,'+12V · Wago → LM2596 IN+');
+  wire([[-14.3,20.3,1],[-10.5,21,-6],[-5.6,19.4,-13.1]],0x93a0b1,'GND · Wago → LM2596 IN−');
+  wire([[-4.9,19.4,-13.8],[-2.5,20.6,-10],[-0.9,19.4,-8.4]],0xffa94d,'+5V · LM2596 OUT+ → ESP32 VIN');
+  wire([[-5,19.4,-14.2],[2,21.4,-11],[6,19.5,-8.6]],0xffa94d,'+5V · LM2596 → relé JD-VCC (jumper removido)');
+  wire([[1.2,19.4,-5],[2.6,20.4,-5.4],[4.4,19.4,-5.6]],0xc084fc,'3V3 · ESP32 → relé VCC (lógica)');
+  wire([[1.2,19.5,-7.4],[2.6,20.6,-7.2],[4.4,19.6,-7]],0xffd43b,'Sinal · GPIO22 → IN1 (Porta 1)');
+  wire([[1.2,19.5,-6.6],[2.6,20.5,-6.4],[4.4,19.6,-6.2]],0x69db7c,'Sinal · GPIO21 → IN2 (Porta 2)');
+  wire([[1.2,19.5,-5.8],[2.6,20.4,-5.9],[4.4,19.6,-5.8]],0x4dd4f7,'Sinal · GPIO16 → IN3 (Porta 3 · gaveta)');
+  wire([[-19,20.4,3],[-6,22.4,4],[10,20.2,-3]],0xff5c5c,'+12V · Wago → COM1/COM2/COM3');
+  wire([[10.5,20,-3.3],[-6,26,10],[-20.6,34,20.8],[-20.6,84,21.6]],0xff8fa3,'Trava 1 · NC1 → eletroímã da vitrine superior');
+  wire([[10,20,-3.3],[-4,25,10],[-19.8,32,20],[-20.6,56,21.6]],0xf0abfc,'Trava 2 · NC2 → eletroímã da vitrine do meio');
+  wire([[11,20,-3.3],[10,18.5,-14],[4,15.5,-20],[1.8,14.2,-20.9]],0xffc078,'Trava 3 · NC3 → eletroímã da gaveta');
+  wire([[-19.5,83,21],[-21.5,45,16],[-16,23,8],[-14.4,20.4,2.9]],0x93a0b1,'GND · retorno do ímã 1 → Wago GND');
+  wire([[-19.5,55,21],[-20.5,36,14],[-15.5,22.5,7],[-14.6,20.4,2.9]],0x93a0b1,'GND · retorno do ímã 2 → Wago GND');
+  wire([[-1.5,13.6,-20.6],[-6,16.5,-12],[-12,20.5,-2],[-14.4,20.2,2.5]],0x93a0b1,'GND · retorno do ímã da gaveta → Wago GND');
+  tftParts.push(wire([[1.3,19.6,-4.2],[6,26,8],[13,33,19],[15.2,35.2,23.2]],0x20c997,'Chicote do display · 8 vias (5V, GND e SPI) com laço de folga p/ a porta abrir'));
+
+  /* ---- portas interativas (clique) ---- */
+  const state={d1:0,d2:0,db:0,dw:0};
+  const animParts=[
+    {key:'d1',grp:doorTop.g,type:'door',led:doorTop.led},
+    {key:'d2',grp:doorMid.g,type:'door',led:doorMid.led},
+    {key:'db',grp:doorW,type:'door',led:null},
+    {key:'dw',grp:drawer,type:'drawer',led:led3}
+  ];
+  animParts.forEach(p=>{p.cur=0;p.grp.userData.toggle=p.key;});
+  function updateDoors(){
+    animParts.forEach(p=>{
+      p.cur+=(state[p.key]-p.cur)*0.14;
+      if(Math.abs(state[p.key]-p.cur)<0.002)p.cur=state[p.key];
+      if(p.type==='door')p.grp.rotation.y=p.cur*1.35;
+      else p.grp.position.z=p.cur*28;
+      if(p.led){
+        const open=p.cur>0.3;
+        p.led.material.color.setHex(open?0xef4444:0x22c55e);
+        p.led.material.emissive.setHex(open?0x991b1b:0x15803d);
+      }
+    });
+  }
+  function toggleFrom(obj){
+    let o=obj;
+    while(o){
+      if(o.userData&&o.userData.toggle){const k=o.userData.toggle;state[k]=state[k]?0:1;return true;}
+      o=o.parent;
+    }
+    return false;
+  }
 
   /* --------- controles de órbita (custom) --------- */
-  const target=new THREE.Vector3(-2,6,0);
-  let theta=-0.85,phi=1.08,radius=70,interacted=false;
+  const target=new THREE.Vector3(0,48,0);
+  let theta=-0.55,phi=1.15,radius=178,interacted=false,moved=0;
   function applyCamera(){
     phi=Math.max(0.15,Math.min(1.45,phi));
-    radius=Math.max(20,Math.min(160,radius));
+    radius=Math.max(60,Math.min(380,radius));
     camera.position.set(
       target.x+radius*Math.sin(phi)*Math.sin(theta),
       target.y+radius*Math.cos(phi),
@@ -1227,16 +1949,31 @@ function init3D(){
   let lastPinch=0;
   const dom=renderer.domElement;
   dom.style.touchAction='none';
-  dom.addEventListener('pointerdown',e=>{ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});interacted=true;dom.setPointerCapture(e.pointerId);});
-  dom.addEventListener('pointerup',e=>{ptrs.delete(e.pointerId);lastPinch=0;});
+  const ray=new THREE.Raycaster();
+  const mouse=new THREE.Vector2();
+  const visiblePick=()=>pickables.filter(m=>{let o=m;while(o){if(!o.visible)return false;o=o.parent;}return true;});
+  dom.addEventListener('pointerdown',e=>{ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});interacted=true;moved=0;dom.setPointerCapture(e.pointerId);});
+  dom.addEventListener('pointerup',e=>{
+    ptrs.delete(e.pointerId);lastPinch=0;
+    if(moved<7){
+      const r=dom.getBoundingClientRect();
+      mouse.x=((e.clientX-r.left)/r.width)*2-1;
+      mouse.y=-((e.clientY-r.top)/r.height)*2+1;
+      ray.setFromCamera(mouse,camera);
+      const hits=ray.intersectObjects(visiblePick(),false);
+      if(hits.length)toggleFrom(hits[0].object);
+    }
+  });
   dom.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);lastPinch=0;});
   dom.addEventListener('pointermove',e=>{
     if(ptrs.has(e.pointerId)){
       const p=ptrs.get(e.pointerId);
       if(ptrs.size===1){
+        moved+=Math.abs(e.clientX-p.x)+Math.abs(e.clientY-p.y);
         theta-=(e.clientX-p.x)*0.006;
         phi-=(e.clientY-p.y)*0.005;
       }else if(ptrs.size===2){
+        moved+=3;
         p.x=e.clientX;p.y=e.clientY;
         const arr=[...ptrs.values()];
         const d=Math.hypot(arr[0].x-arr[1].x,arr[0].y-arr[1].y);
@@ -1250,15 +1987,13 @@ function init3D(){
   dom.addEventListener('wheel',e=>{e.preventDefault();interacted=true;radius*=(1+Math.sign(e.deltaY)*0.09);},{passive:false});
 
   /* --------- hover / rótulos --------- */
-  const ray=new THREE.Raycaster();
-  const mouse=new THREE.Vector2();
   let hot=null;
   function hover(e){
     const r=dom.getBoundingClientRect();
     mouse.x=((e.clientX-r.left)/r.width)*2-1;
     mouse.y=-((e.clientY-r.top)/r.height)*2+1;
     ray.setFromCamera(mouse,camera);
-    const hits=ray.intersectObjects(pickables,false);
+    const hits=ray.intersectObjects(visiblePick(),false);
     const m=hits.length?hits[0].object:null;
     if(hot&&hot!==m){hot.material.emissive.setHex(hot.userData._em||0);hot=null;}
     if(m){
@@ -1279,6 +2014,20 @@ function init3D(){
   }
   dom.addEventListener('pointerleave',()=>{labelEl.style.display='none';if(hot){hot.material.emissive.setHex(hot.userData._em||0);hot=null;}});
 
+  /* --------- configuração da montagem --------- */
+  let curCfg={tft:true,net:'wifi',ap:false};
+  function applyConfig(c){
+    curCfg=c;
+    const lte=c.net!=='wifi';
+    tftParts.forEach(m=>m.visible=!!c.tft);
+    boardLed.visible=!c.tft;
+    lteParts.forEach(m=>m.visible=lte);
+    apParts.forEach(m=>m.visible=!!c.ap);
+    fonteParts.forEach(m=>m.userData.label='Fonte chaveada 12V · '+(lte?'5A':'3A'));
+    espBoard.userData.label='ESP32 NodeMCU — '+({wifi:'Wi-Fi da casa',dual:'Wi-Fi + 4G de reserva',lte:c.ap?'só 4G + hotspot':'só 4G'}[c.net])+', MQTT'+(c.tft?' e display':'');
+    doorWPanel.userData.label='Porta branca · compartimento de equipamentos'+(c.tft?' (tela TFT no canto superior direito)':'')+' — clique para abrir';
+  }
+
   /* --------- loop --------- */
   let running=true;
   function resize(){
@@ -1288,15 +2037,27 @@ function init3D(){
     camera.aspect=w/h;camera.updateProjectionMatrix();
   }
   window.addEventListener('resize',resize);
+  const clock=new THREE.Clock();
   function loop(){
     requestAnimationFrame(loop);
     if(!running)return;
+    const t=clock.getElapsedTime();
     if(!interacted)theta+=0.0022;
+    updateDoors();
+    if(curCfg.ap){
+      apRings.forEach(r=>{
+        const f=((t*0.35)+r.userData.phase)%1;
+        const s=4+f*78; r.scale.set(s,s,1);
+        r.material.opacity=0.55*(1-f);
+      });
+      apBeacon.material.emissiveIntensity=0.8+0.6*Math.sin(t*4);
+    }
+    if(curCfg.net!=='wifi')lteLed.material.emissiveIntensity=(Math.sin(t*6)>0.3)?1.4:0.15;
     applyCamera();
     renderer.render(scene,camera);
   }
   applyCamera();loop();
-  return {onShow(v){running=v;if(v)resize();}};
+  return {onShow(v){running=v;if(v)resize();},applyConfig:applyConfig};
 }
 </script>
 </body>

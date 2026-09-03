@@ -2,3 +2,7 @@
 # See https://docs.wokwi.com/guides/libraries
 
 PubSubClient
+
+# Só na placa real (não simulados no Wokwi):
+#   HAS_TFT 1      -> TFT_eSPI (configure o User_Setup.h: ST7796/ILI9488, pinos 23/18/15/2/4)
+#   NET_DUAL/LTE   -> nada extra: PPP.h e WebServer.h vêm no core arduino-esp32 3.x

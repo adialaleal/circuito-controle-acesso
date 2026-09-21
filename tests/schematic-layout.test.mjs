@@ -68,6 +68,45 @@ test('moving ESP32 reroutes wire-17 from its moved GPIO22 endpoint', () => {
   assert.equal(routeOrthogonal(from, to, Math.round((from.x + to.x) / 2)), 'M812,380 H850 V420 H888');
 });
 
+test('moving ESP32 moves the shared 5V rail and its relay branch', () => {
+  const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const moved = { ...layout.DEFAULT_LAYOUT, esp32: { ...layout.DEFAULT_LAYOUT.esp32, x: 600, y: 300 } };
+  const rail = layout.anchorPositionForLayout('lm2596.5v-rail', moved);
+  const supply = layout.routeOrthogonalVia(
+    layout.anchorPositionForLayout('lm2596.out-plus', moved),
+    rail,
+    layout.anchorPositionForLayout('esp32.vin', moved),
+  );
+  const relayBranch = routeOrthogonal(rail, layout.anchorPositionForLayout('rele.vcc-rail', moved), 774);
+  assert.deepEqual(rail, { x: 560, y: 860 });
+  assert.match(html.match(/<path class="wire"[^>]*data-wire-id="wire-14"[^>]*>/)?.[0], /data-via="lm2596\.5v-rail"/);
+  assert.match(html, /layoutModel\.anchorLayoutOwner\(wire\.dataset\.from\)/);
+  assert.match(html, /layoutModel\.routeOrthogonalVia\(from,layoutModel\.anchorPositionForLayout\(wire\.dataset\.via,layout\),to\)/);
+  assert.match(supply, /H560 M560,860/);
+  assert.match(relayBranch, /^M560,860 /);
+  assert.notEqual(relayBranch, 'M520,860 H988 V782');
+});
+
+test('moving the XL Wago moves every branch sourced at its terminals', () => {
+  const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const moved = { ...layout.DEFAULT_LAYOUT, borne5xl: { ...layout.DEFAULT_LAYOUT.borne5xl, x: 150, y: 440 } };
+  const branches = {
+    'wire-34': ['xl4016.input-rail', 'borne5xl.plus'],
+    'wire-35': ['borne5xl.plus-rail', 'esp32.vin'],
+    'wire-36': ['borne5xl.plus-rail', 'modem.vin'],
+    'wire-38': ['borne5xl.ground-rail', 'esp32.ground'],
+    'wire-39': ['borne5xl.ground-rail', 'modem.ground'],
+  };
+  for (const [wireId, [from, to]] of Object.entries(branches)) {
+    const tag = html.match(new RegExp(`<path class="wire"[^>]*data-wire-id="${wireId}"[^>]*>`))?.[0];
+    assert.match(tag, new RegExp(`data-from="${from}"`));
+    assert.match(tag, new RegExp(`data-to="${to}"`));
+    const movedEndpoint = from.startsWith('borne5xl.') ? layout.anchorPositionForLayout(from, moved) : layout.anchorPositionForLayout(to, moved);
+    const baselineEndpoint = from.startsWith('borne5xl.') ? layout.anchorPositionForLayout(from) : layout.anchorPositionForLayout(to);
+    assert.notDeepEqual(movedEndpoint, baselineEndpoint, `${wireId} must not retain its original Wago terminal`);
+  }
+});
+
 test('every draggable component has only reroutable attached wires', () => {
   const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   const draggable = new Set([...html.matchAll(/<g class="comp"[^>]*data-layout-id="([^"]+)"[^>]*data-layout-editable/g)].map(([, id]) => id));
@@ -217,7 +256,7 @@ test('every wire endpoint resolves to a real component-pin anchor', () => {
     assert.deepEqual(anchorPosition(to), { x, y }, `${to} matches the SVG route end`);
   }
   assert.deepEqual(anchorPosition('p4.out-plus'), { x: 410, y: 110 });
-  assert.deepEqual(anchorPosition('xl4016.out-plus'), { x: 190, y: 455 });
+  assert.deepEqual(anchorPosition('borne5xl.plus-rail'), { x: 190, y: 455 });
   assert.deepEqual(anchorPosition('display.vcc'), { x: 513, y: 1012 });
   assert.deepEqual(anchorPosition('rele.in1'), { x: 888, y: 420 });
   assert.deepEqual(anchorPosition('ima1.plus'), { x: 1340, y: 320 });

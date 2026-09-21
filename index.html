@@ -447,13 +447,13 @@
           <circle data-anchor="lm2596b.in-ground" cx="400" cy="250" r="0"/>
           <circle data-anchor="lm2596b.out-plus" cx="340" cy="420" r="0"/>
           <circle data-anchor="lm2596b.out-ground" cx="400" cy="380" r="0"/>
-          <circle data-anchor="xl4016.in-plus" cx="100" cy="440" r="0"/>
           <circle data-anchor="xl4016.in-ground" cx="160" cy="430" r="0"/>
-          <circle data-anchor="xl4016.out-plus" cx="190" cy="455" r="0"/>
-          <circle data-anchor="xl4016.out-ground" cx="190" cy="495" r="0"/>
           <circle data-anchor="xl4016.modem-plus" cx="340" cy="420" r="0"/>
           <circle data-anchor="xl4016.modem-ground" cx="400" cy="420" r="0"/>
+          <circle data-anchor="borne5xl.plus" cx="100" cy="440" r="0"/>
+          <circle data-anchor="borne5xl.plus-rail" cx="190" cy="455" r="0"/>
           <circle data-anchor="borne5xl.ground" cx="160" cy="480" r="0"/>
+          <circle data-anchor="borne5xl.ground-rail" cx="190" cy="495" r="0"/>
           <circle data-anchor="cap.plus" cx="356" cy="420" r="0"/>
           <circle data-anchor="cap.ground" cx="384" cy="420" r="0"/>
           <circle data-anchor="modem.vin" cx="340" cy="470" r="0"/>
@@ -539,7 +539,7 @@
           <path class="wire" data-reroutable data-wire-id="wire-13" data-from="esp32.ground-out" data-to="rele.ground" data-net="gnd" stroke="var(--wgnd)" d="M772,740 H812 V380 H888"/>
 
           <!-- +5V -->
-          <path class="wire" data-reroutable data-wire-id="wire-14" data-from="lm2596.out-plus" data-to="esp32.vin" data-net="5v" stroke="var(--w5)" d="M100,430 V860 H520 V770 H548"/>
+          <path class="wire" data-reroutable data-wire-id="wire-14" data-from="lm2596.out-plus" data-via="lm2596.5v-rail" data-to="esp32.vin" data-net="5v" stroke="var(--w5)" d="M100,430 V860 H520 V770 H548"/>
           <path class="wire" data-reroutable data-wire-id="wire-15" data-from="lm2596.5v-rail" data-to="rele.vcc-rail" data-net="5v" stroke="var(--w5)" d="M520,860 H988 V782"/>
 
           <!-- 3V3 -->
@@ -568,12 +568,12 @@
           <path class="wire" data-reroutable data-wire-id="wire-32" data-from="lm2596b.out-plus" data-to="cap.plus" data-opt="lte lmdual" data-net="5vm" stroke="var(--w5m)"  d="M340,420 H356"/>
           <path class="wire" data-reroutable data-wire-id="wire-33" data-from="cap.ground" data-to="modem.ground-cap" data-opt="lte lmdual" data-net="gnd" stroke="var(--wgnd)" d="M384,420 H400"/>
           <!-- XL4016 único: o mesmo trilho de 5V alimenta ESP32, relé e modem -->
-          <path class="wire" data-reroutable data-wire-id="wire-34" data-from="xl4016.input-rail" data-to="xl4016.in-plus" data-opt="xl" data-net="5v" stroke="var(--w5)" d="M100,430 V440"/>
-          <path class="wire" data-reroutable data-wire-id="wire-35" data-from="xl4016.out-plus" data-to="esp32.vin" data-opt="xl" data-net="5v" stroke="var(--w5)" d="M190,455 H520 V770 H548"/>
-          <path class="wire" data-reroutable data-wire-id="wire-36" data-from="xl4016.out-plus" data-to="modem.vin" data-opt="xl" data-net="5v" stroke="var(--w5)" d="M190,455 H340 V470"/>
+          <path class="wire" data-reroutable data-wire-id="wire-34" data-from="xl4016.input-rail" data-to="borne5xl.plus" data-opt="xl" data-net="5v" stroke="var(--w5)" d="M100,430 V440"/>
+          <path class="wire" data-reroutable data-wire-id="wire-35" data-from="borne5xl.plus-rail" data-to="esp32.vin" data-opt="xl" data-net="5v" stroke="var(--w5)" d="M190,455 H520 V770 H548"/>
+          <path class="wire" data-reroutable data-wire-id="wire-36" data-from="borne5xl.plus-rail" data-to="modem.vin" data-opt="xl" data-net="5v" stroke="var(--w5)" d="M190,455 H340 V470"/>
           <path class="wire" data-reroutable data-wire-id="wire-37" data-from="xl4016.in-ground" data-to="borne5xl.ground" data-opt="xl" data-net="gnd" stroke="var(--wgnd)" d="M160,430 V480"/>
-          <path class="wire" data-reroutable data-wire-id="wire-38" data-from="xl4016.out-ground" data-to="esp32.ground" data-opt="xl" data-net="gnd" stroke="var(--wgnd)" d="M190,495 H500 V740 H548"/>
-          <path class="wire" data-reroutable data-wire-id="wire-39" data-from="xl4016.out-ground" data-to="modem.ground" data-opt="xl" data-net="gnd" stroke="var(--wgnd)" d="M190,495 H400 V470"/>
+          <path class="wire" data-reroutable data-wire-id="wire-38" data-from="borne5xl.ground-rail" data-to="esp32.ground" data-opt="xl" data-net="gnd" stroke="var(--wgnd)" d="M190,495 H500 V740 H548"/>
+          <path class="wire" data-reroutable data-wire-id="wire-39" data-from="borne5xl.ground-rail" data-to="modem.ground" data-opt="xl" data-net="gnd" stroke="var(--wgnd)" d="M190,495 H400 V470"/>
           <path class="wire" data-reroutable data-wire-id="wire-40" data-from="xl4016.modem-plus" data-to="cap.plus" data-opt="xl" data-net="5v" stroke="var(--w5)" d="M340,420 H356"/>
           <path class="wire" data-reroutable data-wire-id="wire-41" data-from="cap.ground" data-to="xl4016.modem-ground" data-opt="xl" data-net="gnd" stroke="var(--wgnd)" d="M384,420 H400"/>
           <path class="wire" data-reroutable data-wire-id="wire-42" data-from="modem.uart-tx" data-to="esp32.gpio33" data-opt="lte" data-net="lte" stroke="var(--wlte)" d="M475,530 H544"/>
@@ -1630,15 +1630,19 @@ function renderLayout(layout){
   });
   svg.querySelectorAll('.wire[data-reroutable]').forEach(wire=>{
     if(!wire.dataset.originalRoute)wire.dataset.originalRoute=wire.getAttribute('d');
-    const fromId=wire.dataset.from.split('.')[0];
-    const toId=wire.dataset.to.split('.')[0];
-    if(!layoutPositionChanged(fromId,layout)&&!layoutPositionChanged(toId,layout)){
+    const fromId=layoutModel.anchorLayoutOwner(wire.dataset.from);
+    const toId=layoutModel.anchorLayoutOwner(wire.dataset.to);
+    const viaId=wire.dataset.via&&layoutModel.anchorLayoutOwner(wire.dataset.via);
+    if(!layoutPositionChanged(fromId,layout)&&!layoutPositionChanged(toId,layout)&&(!viaId||!layoutPositionChanged(viaId,layout))){
       wire.setAttribute('d',wire.dataset.originalRoute);
       return;
     }
     const from=layoutModel.anchorPositionForLayout(wire.dataset.from,layout);
     const to=layoutModel.anchorPositionForLayout(wire.dataset.to,layout);
-    wire.setAttribute('d',layoutModel.routeOrthogonal(from,to,Math.round((from.x+to.x)/2)));
+    const route=wire.dataset.via
+      ? layoutModel.routeOrthogonalVia(from,layoutModel.anchorPositionForLayout(wire.dataset.via,layout),to)
+      : layoutModel.routeOrthogonal(from,to,Math.round((from.x+to.x)/2));
+    wire.setAttribute('d',route);
   });
   svg.querySelectorAll('.wire-hit[data-wire-id]').forEach(hit=>{
     const wire=svg.querySelector('.wire[data-wire-id="'+hit.dataset.wireId+'"]');

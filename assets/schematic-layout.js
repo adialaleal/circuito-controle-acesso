@@ -39,8 +39,8 @@ export const ANCHORS = Object.freeze({
   'bornegnd.in-ground': { x: 450, y: 145 }, 'bornegnd.out-ground': { x: 520, y: 168 }, 'bornegnd.ground-rail': { x: 620, y: 145 }, 'bornegnd.lte-ground': { x: 400, y: 230 },
   'lm2596.in-plus': { x: 100, y: 300 }, 'lm2596.in-ground': { x: 160, y: 300 }, 'lm2596.out-plus': { x: 100, y: 430 }, 'lm2596.out-ground': { x: 160, y: 430 }, 'lm2596.5v-rail': { x: 520, y: 860 },
   'lm2596b.in-plus': { x: 340, y: 250 }, 'lm2596b.in-ground': { x: 400, y: 250 }, 'lm2596b.out-plus': { x: 340, y: 420 }, 'lm2596b.modem-plus': { x: 340, y: 380 }, 'lm2596b.out-ground': { x: 400, y: 380 },
-  'xl4016.input-rail': { x: 100, y: 430 }, 'xl4016.in-plus': { x: 100, y: 440 }, 'xl4016.in-ground': { x: 160, y: 430 }, 'xl4016.out-plus': { x: 190, y: 455 }, 'xl4016.out-ground': { x: 190, y: 495 }, 'xl4016.modem-plus': { x: 340, y: 420 }, 'xl4016.modem-ground': { x: 400, y: 420 },
-  'borne5xl.ground': { x: 160, y: 480 }, 'cap.plus': { x: 356, y: 420 }, 'cap.ground': { x: 384, y: 420 },
+  'xl4016.input-rail': { x: 100, y: 430 }, 'xl4016.in-ground': { x: 160, y: 430 }, 'xl4016.modem-plus': { x: 340, y: 420 }, 'xl4016.modem-ground': { x: 400, y: 420 },
+  'borne5xl.plus': { x: 100, y: 440 }, 'borne5xl.plus-rail': { x: 190, y: 455 }, 'borne5xl.ground': { x: 160, y: 480 }, 'borne5xl.ground-rail': { x: 190, y: 495 }, 'cap.plus': { x: 356, y: 420 }, 'cap.ground': { x: 384, y: 420 },
   'modem.vin': { x: 340, y: 470 }, 'modem.ground': { x: 400, y: 470 }, 'modem.ground-cap': { x: 400, y: 420 }, 'modem.uart-tx': { x: 475, y: 530 }, 'modem.uart-rx': { x: 475, y: 560 }, 'modem.pwrkey': { x: 475, y: 590 }, 'modem.reset': { x: 475, y: 620 },
   'esp32.vin': { x: 548, y: 770 }, 'esp32.ground': { x: 548, y: 740 }, 'esp32.ground-out': { x: 772, y: 740 }, 'esp32.3v3': { x: 772, y: 770 }, 'esp32.gpio22': { x: 772, y: 380 }, 'esp32.gpio21': { x: 772, y: 470 }, 'esp32.gpio16': { x: 772, y: 620 },
   'esp32.display-vcc': { x: 700, y: 860 }, 'esp32.display-ground': { x: 660, y: 960 }, 'esp32.spi-sdi': { x: 772, y: 710 }, 'esp32.spi-sck': { x: 772, y: 650 }, 'esp32.spi-dc': { x: 772, y: 680 }, 'esp32.spi-cs': { x: 772, y: 350 }, 'esp32.spi-reset': { x: 772, y: 530 }, 'esp32.display-led': { x: 780, y: 770 },
@@ -96,6 +96,12 @@ export function routeOrthogonal(from, to, lane) {
   return `M${from.x},${from.y} H${lane} V${to.y} H${to.x}`;
 }
 
+export function routeOrthogonalVia(from, via, to) {
+  const incoming = routeOrthogonal(from, via, Math.round((from.x + via.x) / 2));
+  const outgoing = routeOrthogonal(via, to, Math.round((via.x + to.x) / 2));
+  return `${incoming} ${outgoing}`;
+}
+
 export function layoutStorageKey(variant) {
   const selected = normalizedVariant(variant);
   return `schematic-layout:v1:${selected.tft}:${selected.net}:${selected.power}`;
@@ -133,9 +139,17 @@ export function anchorPosition(name) {
   return ANCHORS[name];
 }
 
+const SHARED_JUNCTION_OWNERS = Object.freeze({
+  'lm2596.5v-rail': 'esp32',
+});
+
+export function anchorLayoutOwner(name) {
+  return SHARED_JUNCTION_OWNERS[name] ?? name.split('.')[0];
+}
+
 export function anchorPositionForLayout(name, layout = DEFAULT_LAYOUT) {
   const anchor = anchorPosition(name);
-  const owner = name.split('.')[0];
+  const owner = anchorLayoutOwner(name);
   const baseline = DEFAULT_LAYOUT[owner];
   const current = layout?.[owner] ?? baseline;
   return {

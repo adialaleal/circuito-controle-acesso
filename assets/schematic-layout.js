@@ -25,7 +25,7 @@ export const STAGES = Object.freeze({
   1: ['fonte', 'p4', 'borne12', 'bornegnd', 'wire-01', 'wire-02', 'wire-06', 'wire-07'],
   2: ['lm2596', 'lm2596b', 'xl4016', 'borne5xl', 'cap', 'modem', 'antena', 'wire-03', 'wire-04', 'wire-05', 'wire-08', 'wire-09', 'wire-10', 'wire-28', 'wire-29', 'wire-30', 'wire-31', 'wire-32', 'wire-33', 'wire-34', 'wire-35', 'wire-36', 'wire-37', 'wire-38', 'wire-39', 'wire-40', 'wire-41', 'wire-42', 'wire-43', 'wire-44', 'wire-45'],
   3: ['esp32', 'rele', 'wire-11', 'wire-12', 'wire-13', 'wire-14', 'wire-15', 'wire-16', 'wire-17', 'wire-18', 'wire-19'],
-  4: ['d1', 'd2', 'd3', 'ima1', 'ima2', 'ima3', 'display', 'wire-20', 'wire-21', 'wire-22', 'wire-23', 'wire-24', 'wire-25', 'wire-26', 'wire-27', 'wire-46', 'wire-47', 'wire-48'],
+  4: ['d1', 'd2', 'd3', 'ima1', 'ima2', 'ima3', 'display', 'lock1', 'lock2', 'lock3', 'wire-20', 'wire-21', 'wire-22', 'wire-23', 'wire-24', 'wire-25', 'wire-26', 'wire-27', 'wire-46', 'wire-47', 'wire-48'],
 });
 
 const LTE_ONLY_IDS = new Set(['lm2596b', 'cap', 'modem', 'antena', 'wire-28', 'wire-29', 'wire-30', 'wire-31', 'wire-32', 'wire-33', 'wire-42', 'wire-43', 'wire-44', 'wire-45']);

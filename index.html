@@ -87,6 +87,24 @@
     position:relative;
   }
   .canvas-wrap svg{display:block;min-width:1050px;width:100%;height:auto}
+  .schematic-mode{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    margin:0 0 10px;padding:9px 11px;background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  }
+  .schematic-mode .mode-switch,.schematic-mode .guided-nav{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .schematic-mode button{
+    font-family:var(--mono);font-size:11.5px;background:var(--panel2);color:var(--muted);
+    border:1px solid var(--line);border-radius:6px;padding:6px 9px;cursor:pointer;
+  }
+  .schematic-mode button:hover{color:var(--ink);border-color:#3a4552}
+  .schematic-mode button[aria-pressed="true"]{color:var(--amber);border-color:#7a5516;background:#22160a}
+  .schematic-mode button:disabled{opacity:.4;cursor:not-allowed}
+  .schematic-mode button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  .guided-stepper{display:flex;gap:5px;margin:0;padding:0;list-style:none}
+  .guided-stepper button{min-width:29px;padding-inline:7px}
+  .zone-label{font-family:var(--mono);font-size:12px;letter-spacing:.14em;fill:var(--amber);font-weight:700}
+  .is-stage-hidden{display:none!important}
+  .drag-handle{display:none;cursor:grab}
   #view3d{display:none}
   #three-wrap{position:relative;height:640px;border-radius:12px;overflow:hidden;background:#0a0d12;border:1px solid var(--line)}
   #three-wrap canvas{display:block}
@@ -245,7 +263,7 @@
   .flow .arr{color:var(--amber);align-self:center}
   code{font-family:var(--mono);background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12.5px;color:#ffd58a}
   @media (prefers-reduced-motion: reduce){
-    .wire,.comp,.halo{transition:none}
+    .wire,.comp,.halo,.schematic-mode button{transition:none}
   }
 
   /* ---------- configurador da montagem ---------- */
@@ -289,6 +307,13 @@
     border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer;
   }
   .cfgcard .copy:hover{color:var(--ink);border-color:#3a4552}
+
+  @media(max-width:700px){
+    .schematic-mode{align-items:stretch;flex-direction:column}
+    .schematic-mode .mode-switch,.schematic-mode .guided-nav{justify-content:space-between}
+    .guided-stepper{justify-content:space-between;flex:1}
+    .canvas-wrap svg{min-width:1050px}
+  }
 
   /* ondas de rádio (Wi-Fi da casa / hotspot) no esquema */
   @keyframes wifiPulse{0%{opacity:.12}45%{opacity:1}100%{opacity:.12}}
@@ -349,7 +374,24 @@
 <main>
 <div class="stage">
   <div>
-    <div id="view2d" class="canvas-wrap">
+    <div id="view2d">
+      <div class="schematic-mode" role="toolbar" aria-label="Visualização do esquema">
+        <div class="mode-switch">
+          <button id="mode-guided" type="button" aria-pressed="true">Montagem guiada</button>
+          <button id="mode-full" type="button" aria-pressed="false">Circuito completo</button>
+        </div>
+        <div class="guided-nav">
+          <button id="guided-back" type="button">Voltar</button>
+          <ol id="guided-stepper" class="guided-stepper" aria-label="Etapas da montagem">
+            <li><button type="button" data-step="1" aria-label="Etapa 1">1</button></li>
+            <li><button type="button" data-step="2" aria-label="Etapa 2">2</button></li>
+            <li><button type="button" data-step="3" aria-label="Etapa 3">3</button></li>
+            <li><button type="button" data-step="4" aria-label="Etapa 4">4</button></li>
+          </ol>
+          <button id="guided-next" type="button">Próxima conexão</button>
+        </div>
+      </div>
+      <div class="canvas-wrap">
       <svg id="schematic" viewBox="0 0 1560 1210" xmlns="http://www.w3.org/2000/svg" aria-label="Esquema elétrico do controle de acesso">
         <defs>
           <linearGradient id="gBlk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#24272d"/><stop offset=".5" stop-color="#17191e"/><stop offset="1" stop-color="#0f1115"/></linearGradient>
@@ -454,24 +496,30 @@
         </g>
         </defs>
 
+        <g id="zone-labels" aria-hidden="true" hidden>
+          <text class="zone-label" x="40" y="34">POTÊNCIA E DISTRIBUIÇÃO</text>
+          <text class="zone-label" x="560" y="274">CONTROLE</text>
+          <text class="zone-label" x="1290" y="260">SAÍDAS</text>
+        </g>
+
         <!-- ================= FIOS (redes) ================= -->
         <g id="wires">
           <!-- cabo da fonte até o plugue P4 -->
-          <path class="wire" data-wire-id="wire-01" data-from="fonte.p4-plus" data-to="p4.input" data-net="12v" stroke="#4a5563" stroke-width="6" d="M220,125 H286"/>
+          <path class="wire" data-wire-id="wire-01" data-reroutable data-from="fonte.p4-plus" data-to="p4.input" data-net="12v" stroke="#4a5563" stroke-width="6" d="M220,125 H286"/>
 
           <!-- +12V -->
-          <path class="wire" data-wire-id="wire-02" data-from="p4.out-plus" data-to="borne12.in-plus" data-net="12v" stroke="var(--w12)" d="M410,110 H450"/>
+          <path class="wire" data-wire-id="wire-02" data-reroutable data-from="p4.out-plus" data-to="borne12.in-plus" data-net="12v" stroke="var(--w12)" d="M410,110 H450"/>
           <path class="wire" data-wire-id="wire-03" data-from="borne12.out-plus" data-to="lm2596.in-plus" data-net="12v" stroke="var(--w12)" d="M480,103 V210 H100 V300"/>
           <path class="wire" data-wire-id="wire-04" data-from="borne12.lock-plus" data-to="rele.power-rail" data-net="12v" stroke="var(--w12)" d="M620,78 H660 V35 H1210 V590 H1192"/>
-          <path class="wire" data-wire-id="wire-05" data-from="borne12.lock1-rail" data-to="rele.lock1-input" data-net="12v" stroke="var(--w12)" d="M1210,390 H1192"/>
-          <path class="wire" data-wire-id="wire-06" data-from="borne12.lock2-rail" data-to="rele.lock2-input" data-net="12v" stroke="var(--w12)" d="M1210,490 H1192"/>
+          <path class="wire" data-wire-id="wire-05" data-reroutable data-from="borne12.lock1-rail" data-to="rele.lock1-input" data-net="12v" stroke="var(--w12)" d="M1210,390 H1192"/>
+          <path class="wire" data-wire-id="wire-06" data-reroutable data-from="borne12.lock2-rail" data-to="rele.lock2-input" data-net="12v" stroke="var(--w12)" d="M1210,490 H1192"/>
 
           <!-- GND -->
-          <path class="wire" data-wire-id="wire-07" data-from="p4.out-ground" data-to="bornegnd.in-ground" data-net="gnd" stroke="var(--wgnd)" d="M410,145 H450"/>
+          <path class="wire" data-wire-id="wire-07" data-reroutable data-from="p4.out-ground" data-to="bornegnd.in-ground" data-net="gnd" stroke="var(--wgnd)" d="M410,145 H450"/>
           <path class="wire" data-wire-id="wire-08" data-from="bornegnd.out-ground" data-to="lm2596.in-ground" data-net="gnd" stroke="var(--wgnd)" d="M520,168 V230 H160 V300"/>
           <path class="wire" data-wire-id="wire-09" data-from="bornegnd.ground-rail" data-to="ima1.ground" data-net="gnd" stroke="var(--wgnd)" d="M620,145 H640 V960 H1316 V355 H1340"/>
-          <path class="wire" data-wire-id="wire-10" data-from="ima2.ground-rail" data-to="ima2.ground" data-net="gnd" stroke="var(--wgnd)" d="M1316,515 H1340"/>
-          <path class="wire" data-wire-id="wire-11" data-from="ima3.ground-rail" data-to="ima3.ground" data-net="gnd" stroke="var(--wgnd)" d="M1316,675 H1340"/>
+          <path class="wire" data-wire-id="wire-10" data-reroutable data-from="ima2.ground-rail" data-to="ima2.ground" data-net="gnd" stroke="var(--wgnd)" d="M1316,515 H1340"/>
+          <path class="wire" data-wire-id="wire-11" data-reroutable data-from="ima3.ground-rail" data-to="ima3.ground" data-net="gnd" stroke="var(--wgnd)" d="M1316,675 H1340"/>
           <path class="wire" data-wire-id="wire-12" data-from="lm2596.out-ground" data-to="esp32.ground" data-net="gnd" stroke="var(--wgnd)" d="M160,430 V880 H500 V740 H548"/>
           <path class="wire" data-wire-id="wire-13" data-from="esp32.ground-out" data-to="rele.ground" data-net="gnd" stroke="var(--wgnd)" d="M772,740 H812 V380 H888"/>
 
@@ -513,10 +561,10 @@
           <path class="wire" data-wire-id="wire-39" data-from="xl4016.out-ground" data-to="modem.ground" data-opt="xl" data-net="gnd" stroke="var(--wgnd)" d="M190,495 H400 V470"/>
           <path class="wire" data-wire-id="wire-40" data-from="xl4016.modem-plus" data-to="cap.plus" data-opt="xl" data-net="5v" stroke="var(--w5)" d="M340,420 H356"/>
           <path class="wire" data-wire-id="wire-41" data-from="cap.ground" data-to="xl4016.modem-ground" data-opt="xl" data-net="gnd" stroke="var(--wgnd)" d="M384,420 H400"/>
-          <path class="wire" data-wire-id="wire-42" data-from="modem.uart-tx" data-to="esp32.gpio33" data-opt="lte" data-net="lte" stroke="var(--wlte)" d="M475,530 H544"/>
-          <path class="wire" data-wire-id="wire-43" data-from="modem.uart-rx" data-to="esp32.gpio25" data-opt="lte" data-net="lte" stroke="var(--wlte)" d="M475,560 H544"/>
-          <path class="wire" data-wire-id="wire-44" data-from="modem.pwrkey" data-to="esp32.gpio26" data-opt="lte" data-net="lte" stroke="var(--wlte)" d="M475,590 H544"/>
-          <path class="wire" data-wire-id="wire-45" data-from="modem.reset" data-to="esp32.gpio27" data-opt="lte" data-net="lte" stroke="var(--wlte)" d="M475,620 H544"/>
+          <path class="wire" data-wire-id="wire-42" data-reroutable data-from="modem.uart-tx" data-to="esp32.gpio33" data-opt="lte" data-net="lte" stroke="var(--wlte)" d="M475,530 H544"/>
+          <path class="wire" data-wire-id="wire-43" data-reroutable data-from="modem.uart-rx" data-to="esp32.gpio25" data-opt="lte" data-net="lte" stroke="var(--wlte)" d="M475,560 H544"/>
+          <path class="wire" data-wire-id="wire-44" data-reroutable data-from="modem.pwrkey" data-to="esp32.gpio26" data-opt="lte" data-net="lte" stroke="var(--wlte)" d="M475,590 H544"/>
+          <path class="wire" data-wire-id="wire-45" data-reroutable data-from="modem.reset" data-to="esp32.gpio27" data-opt="lte" data-net="lte" stroke="var(--wlte)" d="M475,620 H544"/>
 
           <!-- travas (12V chaveado pelo contato NC) -->
           <path class="wire" data-wire-id="wire-46" data-from="rele.nc1" data-to="ima1.plus" data-net="lock1" stroke="var(--wl1)" d="M1192,420 H1240 V320 H1340"/>
@@ -963,6 +1011,7 @@
           <text class="silk-dim" x="232" y="1204" font-size="10">TFT 4.0" SPI · ST7796S/ILI9488 · 480×320 · na porta do armário</text>
         </g>
       </svg>
+      </div>
     </div>
 
     <div id="view3d">
@@ -1250,6 +1299,18 @@
 ============================================================ */
 const CFG_KEY='cfg-montagem';
 const cfg={tft:true,net:'wifi',ap:false,power:'xl4016'};
+let layoutModel=null;
+let schematicView={view:'guided',step:1};
+const layoutModelReady=import('./assets/schematic-layout.js').then(model=>{
+  layoutModel=model;
+  applySchematicView();
+  return model;
+}).catch(()=>null);
+function normalizeSchematicView(value={}){
+  if(layoutModel)return layoutModel.normalizeView(value);
+  const step=Number.parseInt(value.step,10);
+  return {view:value.view==='full'?'full':'guided',step:Math.min(4,Math.max(1,Number.isNaN(step)?1:step))};
+}
 function readCfg(){
   let src=null;
   const h=location.hash.replace(/^#/,'');
@@ -1261,6 +1322,7 @@ function readCfg(){
   if(src.ap!==undefined)cfg.ap=(src.ap==='1'||src.ap===true||src.ap===1);
   if(['lm2596','xl4016'].includes(src.power))cfg.power=src.power;
   if(cfg.net!=='lte')cfg.ap=false;
+  schematicView=normalizeSchematicView(src);
   if(src.tab==='3d')selectTab('b'); else if(src.tab==='lista')selectTab('c');
 }
 function optOn(o){
@@ -1441,7 +1503,7 @@ const RELE_HDR=[{n:'GND',net:'gnd',y:380},{n:'IN1',net:'sig1',y:420},{n:'IN2',ne
   const hits=el('g',{id:'wire-hits'});
   wiresG.parentNode.insertBefore(hits,wiresG.nextSibling);
   wiresG.querySelectorAll('path.wire').forEach(p=>{
-    const a={d:p.getAttribute('d'),class:'wire-hit','data-net':p.dataset.net};
+    const a={d:p.getAttribute('d'),class:'wire-hit','data-net':p.dataset.net,'data-wire-id':p.dataset.wireId};
     if(p.dataset.opt)a['data-opt']=p.dataset.opt;
     el('path',a,hits);
   });
@@ -1453,6 +1515,85 @@ const RELE_HDR=[{n:'GND',net:'gnd',y:380},{n:'IN1',net:'sig1',y:420},{n:'IN2',ne
 const svg=document.getElementById('schematic');
 const insp={box:document.getElementById('inspector'),t:document.getElementById('insp-title'),d:document.getElementById('insp-desc'),l:document.getElementById('insp-list')};
 let pinned=null;
+const GUIDED_COPY=Object.freeze({
+  1:{title:'1 · Fonte e distribuição 12V',desc:'Conecte a fonte ao P4 e confirme +12V e GND nos dois Wagos antes de avançar.'},
+  2:{title:'2 · Conversão para 5V e rede',desc:'Ajuste o conversor para 5,0V. Com 4G, inclua o modem, a antena e o capacitor conforme a opção escolhida.'},
+  3:{title:'3 · Controle e relés',desc:'Ligue ESP32, GND, alimentação do relé e os três sinais GPIO antes de conectar as travas.'},
+  4:{title:'4 · Travas, diodos e tela',desc:'Finalize os três eletroímãs, os diodos flyback e, quando aplicável, o chicote SPI da tela.'}
+});
+const FULL_COPY={title:'Circuito completo',desc:'Todas as conexões aplicáveis à configuração aparecem por zona: potência, controle e saídas.'};
+
+function setStageHidden(element, hidden){
+  element.classList.toggle('is-stage-hidden',hidden);
+  element.toggleAttribute('hidden',hidden);
+  element.setAttribute('aria-hidden',String(hidden));
+}
+function writeSchematicHash(){
+  const hash='#tft='+(cfg.tft?1:0)+'&net='+cfg.net+'&ap='+(cfg.ap?1:0)+'&power='+cfg.power+'&view='+schematicView.view+'&step='+schematicView.step;
+  if(location.hash!==hash)history.replaceState(null,'',hash);
+}
+function applySchematicView(){
+  const guided=schematicView.view==='guided';
+  const copy=guided?GUIDED_COPY[schematicView.step]:FULL_COPY;
+  const visible=layoutModel?new Set(layoutModel.visibleIds(guided?schematicView.step:4,cfg)):null;
+  const selectable=svg.querySelectorAll('.comp[data-id],.wire[data-wire-id],.wire-hit[data-wire-id]');
+  selectable.forEach(element=>{
+    const id=element.dataset.id||element.dataset.wireId;
+    setStageHidden(element,visible?(!visible.has(id)):false);
+  });
+  const labels=svg.querySelector('#zone-labels');
+  if(labels)setStageHidden(labels,guided);
+  const dots=svg.querySelector('#dots');
+  if(dots)setStageHidden(dots,guided);
+
+  svg.querySelectorAll('.comp[data-layout-id]').forEach(component=>{
+    const layout=layoutModel&&layoutModel.DEFAULT_LAYOUT[component.dataset.layoutId];
+    if(!layout||guided){component.removeAttribute('transform');return;}
+    const x=Number(component.dataset.layoutX||layout.x);
+    const y=Number(component.dataset.layoutY||layout.y);
+    component.dataset.layoutX=String(x);
+    component.dataset.layoutY=String(y);
+    component.setAttribute('transform','translate('+(x-layout.x)+' '+(y-layout.y)+')');
+  });
+  svg.querySelectorAll('.wire[data-reroutable]').forEach(wire=>{
+    if(!wire.dataset.originalRoute)wire.dataset.originalRoute=wire.getAttribute('d');
+    if(guided||!layoutModel){wire.setAttribute('d',wire.dataset.originalRoute);return;}
+    const from=layoutModel.anchorPosition(wire.dataset.from);
+    const to=layoutModel.anchorPosition(wire.dataset.to);
+    wire.setAttribute('d',layoutModel.routeOrthogonal(from,to,Math.round((from.x+to.x)/2)));
+  });
+  svg.querySelectorAll('.wire-hit[data-wire-id]').forEach(hit=>{
+    const wire=svg.querySelector('.wire[data-wire-id="'+hit.dataset.wireId+'"]');
+    if(wire)hit.setAttribute('d',wire.getAttribute('d'));
+  });
+
+  document.getElementById('mode-guided').setAttribute('aria-pressed',String(guided));
+  document.getElementById('mode-full').setAttribute('aria-pressed',String(!guided));
+  document.querySelectorAll('#guided-stepper button').forEach(button=>{
+    const active=guided&&Number(button.dataset.step)===schematicView.step;
+    button.setAttribute('aria-pressed',String(active));
+    button.setAttribute('aria-current',active?'step':'false');
+    button.toggleAttribute('disabled',!guided);
+  });
+  document.getElementById('guided-back').disabled=!guided||schematicView.step===1;
+  document.getElementById('guided-next').disabled=!guided||schematicView.step===4;
+  setPinned(null);
+  resetInspector();
+  insp.t.textContent=copy.title;
+  insp.d.textContent=copy.desc;
+}
+function setSchematicView(view, step){
+  schematicView=normalizeSchematicView({view,step});
+  applySchematicView();
+  writeSchematicHash();
+}
+window.applySchematicView=applySchematicView;
+window.setSchematicView=setSchematicView;
+document.getElementById('mode-guided').addEventListener('click',()=>setSchematicView('guided',schematicView.step));
+document.getElementById('mode-full').addEventListener('click',()=>setSchematicView('full',schematicView.step));
+document.getElementById('guided-back').addEventListener('click',()=>setSchematicView('guided',schematicView.step-1));
+document.getElementById('guided-next').addEventListener('click',()=>setSchematicView('guided',schematicView.step+1));
+document.querySelectorAll('#guided-stepper button').forEach(button=>button.addEventListener('click',()=>setSchematicView('guided',button.dataset.step)));
 
 function clearActive(){
   svg.classList.remove('probing');
@@ -1792,8 +1933,8 @@ function applyConfig(){
   /* 3D */
   if(three&&three.applyConfig)three.applyConfig(cfg);
   /* persistência */
-  const hash='#tft='+(cfg.tft?1:0)+'&net='+cfg.net+'&ap='+(cfg.ap?1:0)+'&power='+cfg.power;
-  if(location.hash!==hash)history.replaceState(null,'',hash);
+  applySchematicView();
+  writeSchematicHash();
   try{localStorage.setItem(CFG_KEY,JSON.stringify(cfg));}catch(e){}
 }
 document.querySelectorAll('.seg').forEach(seg=>{

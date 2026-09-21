@@ -14,6 +14,23 @@ test('XL4016 step 2 includes its visible distribution path only with LTE', () =>
   assert.ok(!visibleIds(2, { tft: false, net: 'wifi', power: 'xl4016' }).includes('modem'));
 });
 
+test('guided stages are cumulative and hide output locks before step 4', () => {
+  const step3 = visibleIds(3, { tft: false, net: 'lte', power: 'xl4016' });
+  assert.ok(step3.includes('esp32') && step3.includes('modem') && step3.includes('rele'));
+  assert.ok(!step3.includes('lock1') && !step3.includes('lock2') && !step3.includes('lock3'));
+  assert.ok(visibleIds(4, { tft: false, net: 'lte', power: 'xl4016' }).includes('lock3'));
+});
+
+test('schematic offers accessible guided and full-view controls', () => {
+  const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(html, /id="mode-guided"[^>]*aria-pressed/);
+  assert.match(html, /id="mode-full"[^>]*aria-pressed/);
+  assert.match(html, /id="guided-stepper"/);
+  assert.match(html, /function applySchematicView\(\)/);
+  assert.match(html, /function setSchematicView\(view, step\)/);
+  assert.match(html, /history\.replaceState\(null,'',hash\)/);
+});
+
 test('orthogonal router emits non-zero segments', () => {
   assert.equal(routeOrthogonal({ x: 10, y: 10 }, { x: 80, y: 10 }, 40), 'M10,10 H80');
   assert.equal(routeOrthogonal({ x: 10, y: 10 }, { x: 10, y: 90 }, 40), 'M10,10 V90');

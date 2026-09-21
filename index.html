@@ -402,7 +402,7 @@
         </div>
       </div>
       <p id="schematic-status" class="schematic-status" role="status" data-state="loading">Carregando a visualização guiada…</p>
-      <div id="schematic-canvas" class="canvas-wrap" hidden>
+      <div id="schematic-canvas" class="canvas-wrap">
       <svg id="schematic" viewBox="0 0 1560 1210" xmlns="http://www.w3.org/2000/svg" aria-label="Esquema elétrico do controle de acesso">
         <defs>
           <linearGradient id="gBlk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#24272d"/><stop offset=".5" stop-color="#17191e"/><stop offset="1" stop-color="#0f1115"/></linearGradient>
@@ -420,7 +420,8 @@
           <circle data-anchor="borne12.lock2-rail" cx="1210" cy="490" r="0"/>
           <circle data-anchor="lm2596.5v-rail" cx="520" cy="860" r="0"/>
           <circle data-anchor="lm2596b.modem-plus" cx="340" cy="380" r="0"/>
-          <circle data-anchor="xl4016.input-rail" cx="100" cy="430" r="0"/>
+          <circle data-anchor="xl4016.input-plus" cx="100" cy="290" r="0"/>
+          <circle data-anchor="xl4016.input-ground" cx="160" cy="290" r="0"/>
           <circle data-anchor="modem.ground-cap" cx="400" cy="420" r="0"/>
           <circle data-anchor="rele.lock1-input" cx="1192" cy="390" r="0"/>
           <circle data-anchor="rele.lock2-input" cx="1192" cy="490" r="0"/>
@@ -447,7 +448,8 @@
           <circle data-anchor="lm2596b.in-ground" cx="400" cy="250" r="0"/>
           <circle data-anchor="lm2596b.out-plus" cx="340" cy="420" r="0"/>
           <circle data-anchor="lm2596b.out-ground" cx="400" cy="380" r="0"/>
-          <circle data-anchor="xl4016.in-ground" cx="160" cy="430" r="0"/>
+          <circle data-anchor="xl4016.output-plus" cx="100" cy="430" r="0"/>
+          <circle data-anchor="xl4016.output-ground" cx="160" cy="430" r="0"/>
           <circle data-anchor="xl4016.modem-plus" cx="340" cy="420" r="0"/>
           <circle data-anchor="xl4016.modem-ground" cx="400" cy="420" r="0"/>
           <circle data-anchor="borne5xl.plus" cx="100" cy="440" r="0"/>
@@ -524,8 +526,8 @@
 
           <!-- +12V -->
           <path class="wire" data-reroutable data-wire-id="wire-02" data-from="p4.out-plus" data-to="borne12.in-plus" data-net="12v" stroke="var(--w12)" d="M410,110 H450"/>
-          <path class="wire" data-reroutable data-wire-id="wire-03" data-from="borne12.out-plus" data-to="lm2596.in-plus" data-net="12v" stroke="var(--w12)" d="M480,103 V210 H100 V300"/>
-          <path class="wire" data-reroutable data-wire-id="wire-04" data-from="borne12.lock-plus" data-to="rele.power-rail" data-net="12v" stroke="var(--w12)" d="M620,78 H660 V35 H1210 V590 H1192"/>
+          <path class="wire" data-reroutable data-wire-id="wire-03" data-from="borne12.out-plus" data-via="borne12.lte-plus" data-to="lm2596.in-plus" data-net="12v" stroke="var(--w12)" d="M480,103 V210 H100 V300"/>
+          <path class="wire" data-reroutable data-wire-id="wire-04" data-from="borne12.lock-plus" data-via="borne12.lock1-rail borne12.lock2-rail" data-to="rele.power-rail" data-net="12v" stroke="var(--w12)" d="M620,78 H660 V35 H1210 V590 H1192"/>
           <path class="wire" data-reroutable data-wire-id="wire-05" data-from="borne12.lock1-rail" data-to="rele.lock1-input" data-net="12v" stroke="var(--w12)" d="M1210,390 H1192"/>
           <path class="wire" data-reroutable data-wire-id="wire-06" data-from="borne12.lock2-rail" data-to="rele.lock2-input" data-net="12v" stroke="var(--w12)" d="M1210,490 H1192"/>
 
@@ -568,14 +570,17 @@
           <path class="wire" data-reroutable data-wire-id="wire-32" data-from="lm2596b.out-plus" data-to="cap.plus" data-opt="lte lmdual" data-net="5vm" stroke="var(--w5m)"  d="M340,420 H356"/>
           <path class="wire" data-reroutable data-wire-id="wire-33" data-from="cap.ground" data-to="modem.ground-cap" data-opt="lte lmdual" data-net="gnd" stroke="var(--wgnd)" d="M384,420 H400"/>
           <!-- XL4016 único: o mesmo trilho de 5V alimenta ESP32, relé e modem -->
-          <path class="wire" data-reroutable data-wire-id="wire-34" data-from="xl4016.input-rail" data-to="borne5xl.plus" data-opt="xl" data-net="5v" stroke="var(--w5)" d="M100,430 V440"/>
+          <path class="wire" data-reroutable data-wire-id="wire-34" data-from="xl4016.output-plus" data-to="borne5xl.plus" data-opt="xl" data-net="5v" stroke="var(--w5)" d="M100,430 V440"/>
           <path class="wire" data-reroutable data-wire-id="wire-35" data-from="borne5xl.plus-rail" data-to="esp32.vin" data-opt="xl" data-net="5v" stroke="var(--w5)" d="M190,455 H520 V770 H548"/>
           <path class="wire" data-reroutable data-wire-id="wire-36" data-from="borne5xl.plus-rail" data-to="modem.vin" data-opt="xl" data-net="5v" stroke="var(--w5)" d="M190,455 H340 V470"/>
-          <path class="wire" data-reroutable data-wire-id="wire-37" data-from="xl4016.in-ground" data-to="borne5xl.ground" data-opt="xl" data-net="gnd" stroke="var(--wgnd)" d="M160,430 V480"/>
+          <path class="wire" data-reroutable data-wire-id="wire-37" data-from="xl4016.output-ground" data-to="borne5xl.ground" data-opt="xl" data-net="gnd" stroke="var(--wgnd)" d="M160,430 V480"/>
           <path class="wire" data-reroutable data-wire-id="wire-38" data-from="borne5xl.ground-rail" data-to="esp32.ground" data-opt="xl" data-net="gnd" stroke="var(--wgnd)" d="M190,495 H500 V740 H548"/>
           <path class="wire" data-reroutable data-wire-id="wire-39" data-from="borne5xl.ground-rail" data-to="modem.ground" data-opt="xl" data-net="gnd" stroke="var(--wgnd)" d="M190,495 H400 V470"/>
           <path class="wire" data-reroutable data-wire-id="wire-40" data-from="xl4016.modem-plus" data-to="cap.plus" data-opt="xl" data-net="5v" stroke="var(--w5)" d="M340,420 H356"/>
           <path class="wire" data-reroutable data-wire-id="wire-41" data-from="cap.ground" data-to="xl4016.modem-ground" data-opt="xl" data-net="gnd" stroke="var(--wgnd)" d="M384,420 H400"/>
+          <path class="wire" data-reroutable data-wire-id="wire-49" data-from="borne12.out-plus" data-to="xl4016.input-plus" data-opt="xl" data-net="12v" stroke="var(--w12)" d="M480,103 V210 H100 V290"/>
+          <path class="wire" data-reroutable data-wire-id="wire-50" data-from="bornegnd.out-ground" data-to="xl4016.input-ground" data-opt="xl" data-net="gnd" stroke="var(--wgnd)" d="M520,168 V230 H160 V290"/>
+          <path class="wire" data-reroutable data-wire-id="wire-51" data-from="borne5xl.plus-rail" data-to="rele.vcc-rail" data-opt="xl" data-net="5v" stroke="var(--w5)" d="M190,455 H988 V782"/>
           <path class="wire" data-reroutable data-wire-id="wire-42" data-from="modem.uart-tx" data-to="esp32.gpio33" data-opt="lte" data-net="lte" stroke="var(--wlte)" d="M475,530 H544"/>
           <path class="wire" data-reroutable data-wire-id="wire-43" data-from="modem.uart-rx" data-to="esp32.gpio25" data-opt="lte" data-net="lte" stroke="var(--wlte)" d="M475,560 H544"/>
           <path class="wire" data-reroutable data-wire-id="wire-44" data-from="modem.pwrkey" data-to="esp32.gpio26" data-opt="lte" data-net="lte" stroke="var(--wlte)" d="M475,590 H544"/>
@@ -803,7 +808,7 @@
         </g>
 
         <!-- ================= MODEM 4G LTE · A7672SA (opcional) ================= -->
-        <g class="comp" data-id="modem" data-opt="lte" data-layout-id="modem" data-layout-editable data-zone="control"><g class="drag-handle" data-drag-handle=""></g>
+        <g class="comp" data-id="modem" data-opt="lte" data-layout-id="modem" data-zone="control"><g class="drag-handle" data-drag-handle=""></g>
           <rect class="halo" x="212" y="462" width="266" height="236" rx="10"/>
           <rect class="board" x="220" y="470" width="250" height="220"/>
           <!-- pinos superiores: VIN / GND -->
@@ -935,7 +940,7 @@
           <text class="silk-dim" x="1284" y="662" font-size="8" text-anchor="end">D3 1N4007</text>
         </g>
 
-        <g class="comp" data-id="ima1" data-layout-id="ima1" data-layout-editable data-zone="outputs"><g class="drag-handle" data-drag-handle=""></g>
+        <g class="comp" data-id="ima1" data-layout-id="ima1" data-zone="outputs"><g class="drag-handle" data-drag-handle=""></g>
           <rect class="halo" x="1352" y="288" width="176" height="132" rx="10"/>
           <text class="silk-dim" x="1360" y="296" font-size="10" fill="var(--amber)">PORTA 1</text>
           <rect x="1360" y="300" width="160" height="80" rx="6" fill="url(#gAlu)" stroke="#7e8894" stroke-width="1.5"/>
@@ -954,7 +959,7 @@
           <circle cx="1440" cy="400" r="3.4" fill="#565f6a" stroke="#3d454e"/>
           <text class="silk-dim" x="1382" y="418" font-size="8">contra-placa (na porta)</text>
         </g>
-        <g class="comp" data-id="ima2" data-layout-id="ima2" data-layout-editable data-zone="outputs"><g class="drag-handle" data-drag-handle=""></g>
+        <g class="comp" data-id="ima2" data-layout-id="ima2" data-zone="outputs"><g class="drag-handle" data-drag-handle=""></g>
           <rect class="halo" x="1352" y="448" width="176" height="132" rx="10"/>
           <text class="silk-dim" x="1360" y="456" font-size="10" fill="var(--amber)">PORTA 2</text>
           <rect x="1360" y="460" width="160" height="80" rx="6" fill="url(#gAlu)" stroke="#7e8894" stroke-width="1.5"/>
@@ -973,7 +978,7 @@
           <circle cx="1440" cy="560" r="3.4" fill="#565f6a" stroke="#3d454e"/>
           <text class="silk-dim" x="1382" y="578" font-size="8">contra-placa (na porta)</text>
         </g>
-        <g class="comp" data-id="ima3" data-layout-id="ima3" data-layout-editable data-zone="outputs"><g class="drag-handle" data-drag-handle=""></g>
+        <g class="comp" data-id="ima3" data-layout-id="ima3" data-zone="outputs"><g class="drag-handle" data-drag-handle=""></g>
           <rect class="halo" x="1352" y="608" width="176" height="132" rx="10"/>
           <text class="silk-dim" x="1360" y="616" font-size="10" fill="var(--amber)">PORTA 3</text>
           <rect x="1360" y="620" width="160" height="80" rx="6" fill="url(#gAlu)" stroke="#7e8894" stroke-width="1.5"/>
@@ -1555,7 +1560,7 @@ function setSchematicLoadState(state){
   const canvas=document.getElementById('schematic-canvas');
   const status=document.getElementById('schematic-status');
   const ready=state==='ready';
-  canvas.hidden=!ready;
+  canvas.hidden=false;
   status.hidden=ready;
   status.dataset.state=state;
   status.textContent=state==='failed'
@@ -1632,15 +1637,16 @@ function renderLayout(layout){
     if(!wire.dataset.originalRoute)wire.dataset.originalRoute=wire.getAttribute('d');
     const fromId=layoutModel.anchorLayoutOwner(wire.dataset.from);
     const toId=layoutModel.anchorLayoutOwner(wire.dataset.to);
-    const viaId=wire.dataset.via&&layoutModel.anchorLayoutOwner(wire.dataset.via);
-    if(!layoutPositionChanged(fromId,layout)&&!layoutPositionChanged(toId,layout)&&(!viaId||!layoutPositionChanged(viaId,layout))){
+    const viaNames=wire.dataset.via?.trim().split(/\s+/).filter(Boolean)??[];
+    const viaIds=viaNames.map(name=>layoutModel.anchorLayoutOwner(name));
+    if(!layoutPositionChanged(fromId,layout)&&!layoutPositionChanged(toId,layout)&&viaIds.every(id=>!layoutPositionChanged(id,layout))){
       wire.setAttribute('d',wire.dataset.originalRoute);
       return;
     }
     const from=layoutModel.anchorPositionForLayout(wire.dataset.from,layout);
     const to=layoutModel.anchorPositionForLayout(wire.dataset.to,layout);
-    const route=wire.dataset.via
-      ? layoutModel.routeOrthogonalVia(from,layoutModel.anchorPositionForLayout(wire.dataset.via,layout),to)
+    const route=viaNames.length
+      ? layoutModel.routeOrthogonalThrough([from,...viaNames.map(name=>layoutModel.anchorPositionForLayout(name,layout)),to])
       : layoutModel.routeOrthogonal(from,to,Math.round((from.x+to.x)/2));
     wire.setAttribute('d',route);
   });
@@ -1816,7 +1822,9 @@ function applySchematicView(){
     button.toggleAttribute('disabled',!guided);
   });
   document.getElementById('guided-back').disabled=!guided||schematicView.step===1;
-  document.getElementById('guided-next').disabled=!guided||schematicView.step===4;
+  const guidedNext=document.getElementById('guided-next');
+  guidedNext.disabled=!guided;
+  guidedNext.textContent=guided&&schematicView.step===4?'Ver circuito completo':'Próxima conexão';
   updateLayoutEditorControls();
   setPinned(null);
   resetInspector();
@@ -1840,7 +1848,7 @@ document.getElementById('mode-full').addEventListener('click',()=>setSchematicVi
 document.getElementById('layout-edit').addEventListener('click',()=>{if(editingLayout)exitLayoutEditor();else enterLayoutEditor();});
 document.getElementById('layout-restore').addEventListener('click',restoreLayout);
 document.getElementById('guided-back').addEventListener('click',()=>setSchematicView('guided',schematicView.step-1));
-document.getElementById('guided-next').addEventListener('click',()=>setSchematicView('guided',schematicView.step+1));
+document.getElementById('guided-next').addEventListener('click',()=>{if(schematicView.step===4)setSchematicView('full',4);else setSchematicView('guided',schematicView.step+1);});
 document.querySelectorAll('#guided-stepper button').forEach(button=>button.addEventListener('click',()=>setSchematicView('guided',button.dataset.step)));
 
 function clearActive(){

@@ -15,6 +15,22 @@ test('XL4016 step 2 includes its visible distribution path only with LTE', () =>
   assert.ok(!visibleIds(2, { tft: false, net: 'wifi', power: 'xl4016' }).includes('modem'));
 });
 
+test('XL4016 keeps 12V, ground and relay 5V connectivity through its Wago', () => {
+  const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const ids = new Set(visibleIds(3, { tft: false, net: 'lte', power: 'xl4016' }));
+  ['wire-49', 'wire-50', 'wire-51'].forEach((id) => assert.ok(ids.has(id), `${id} remains visible in XL mode`));
+  const expected = {
+    'wire-49': ['borne12.out-plus', 'xl4016.input-plus'],
+    'wire-50': ['bornegnd.out-ground', 'xl4016.input-ground'],
+    'wire-51': ['borne5xl.plus-rail', 'rele.vcc-rail'],
+  };
+  for (const [id, [from, to]] of Object.entries(expected)) {
+    const tag = html.match(new RegExp(`<path class="wire"[^>]*data-wire-id="${id}"[^>]*>`))?.[0];
+    assert.match(tag, new RegExp(`data-from="${from}"`));
+    assert.match(tag, new RegExp(`data-to="${to}"`));
+  }
+});
+
 test('guided stages are cumulative and hide output locks before step 4', () => {
   const step3 = visibleIds(3, { tft: false, net: 'lte', power: 'xl4016' });
   assert.ok(step3.includes('esp32') && step3.includes('modem') && step3.includes('rele'));
@@ -81,7 +97,7 @@ test('moving ESP32 moves the shared 5V rail and its relay branch', () => {
   assert.deepEqual(rail, { x: 560, y: 860 });
   assert.match(html.match(/<path class="wire"[^>]*data-wire-id="wire-14"[^>]*>/)?.[0], /data-via="lm2596\.5v-rail"/);
   assert.match(html, /layoutModel\.anchorLayoutOwner\(wire\.dataset\.from\)/);
-  assert.match(html, /layoutModel\.routeOrthogonalVia\(from,layoutModel\.anchorPositionForLayout\(wire\.dataset\.via,layout\),to\)/);
+  assert.match(html, /layoutModel\.routeOrthogonalThrough\(\[from,...viaNames\.map\(name=>layoutModel\.anchorPositionForLayout\(name,layout\)\),to\]\)/);
   assert.match(supply, /H560 M560,860/);
   assert.match(relayBranch, /^M560,860 /);
   assert.notEqual(relayBranch, 'M520,860 H988 V782');
@@ -91,7 +107,7 @@ test('moving the XL Wago moves every branch sourced at its terminals', () => {
   const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   const moved = { ...layout.DEFAULT_LAYOUT, borne5xl: { ...layout.DEFAULT_LAYOUT.borne5xl, x: 150, y: 440 } };
   const branches = {
-    'wire-34': ['xl4016.input-rail', 'borne5xl.plus'],
+    'wire-34': ['xl4016.output-plus', 'borne5xl.plus'],
     'wire-35': ['borne5xl.plus-rail', 'esp32.vin'],
     'wire-36': ['borne5xl.plus-rail', 'modem.vin'],
     'wire-38': ['borne5xl.ground-rail', 'esp32.ground'],
@@ -105,6 +121,43 @@ test('moving the XL Wago moves every branch sourced at its terminals', () => {
     const baselineEndpoint = from.startsWith('borne5xl.') ? layout.anchorPositionForLayout(from) : layout.anchorPositionForLayout(to);
     assert.notDeepEqual(movedEndpoint, baselineEndpoint, `${wireId} must not retain its original Wago terminal`);
   }
+});
+
+test('shared relay and modem taps follow their moved assemblies', () => {
+  const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const relay = { ...layout.DEFAULT_LAYOUT, rele: { ...layout.DEFAULT_LAYOUT.rele, x: 940, y: 330 } };
+  const lockTap = layout.anchorPositionForLayout('borne12.lock1-rail', relay);
+  const lockTap2 = layout.anchorPositionForLayout('borne12.lock2-rail', relay);
+  const com1 = layout.anchorPositionForLayout('rele.nc1', relay);
+  assert.deepEqual(lockTap, { x: 1250, y: 390 });
+  assert.deepEqual(lockTap2, { x: 1250, y: 490 });
+  assert.deepEqual(com1, { x: 1232, y: 420 });
+  assert.match(html.match(/<path class="wire"[^>]*data-wire-id="wire-04"[^>]*>/)?.[0], /data-via="borne12\.lock1-rail borne12\.lock2-rail"/);
+  assert.match(layout.routeOrthogonalThrough([
+    layout.anchorPositionForLayout('borne12.lock-plus', relay), lockTap, lockTap2,
+    layout.anchorPositionForLayout('rele.power-rail', relay),
+  ]), /H1250 M1250,390/);
+  assert.match(routeOrthogonal(lockTap, layout.anchorPositionForLayout('rele.lock1-input', relay), 1241), /^M1250,390 /);
+  assert.match(routeOrthogonal(com1, layout.anchorPositionForLayout('ima1.plus', relay), 1286), /^M1232,420 /);
+
+  const lm = { ...layout.DEFAULT_LAYOUT, lm2596: { ...layout.DEFAULT_LAYOUT.lm2596, x: 90, y: 300 } };
+  const modemTap = layout.anchorPositionForLayout('borne12.lte-plus', lm);
+  assert.deepEqual(modemTap, { x: 380, y: 210 });
+  assert.match(html.match(/<path class="wire"[^>]*data-wire-id="wire-03"[^>]*>/)?.[0], /data-via="borne12\.lte-plus"/);
+  assert.match(layout.routeOrthogonalThrough([
+    layout.anchorPositionForLayout('borne12.out-plus', lm),
+    modemTap,
+    layout.anchorPositionForLayout('lm2596.in-plus', lm),
+  ]), /H380 M380,210/);
+  assert.match(routeOrthogonal(modemTap, layout.anchorPositionForLayout('lm2596b.in-plus', lm), 360), /^M380,210 /);
+});
+
+test('moving ESP32 vertically reroutes the TFT ground trunk from its moved pin', () => {
+  const moved = { ...layout.DEFAULT_LAYOUT, esp32: { ...layout.DEFAULT_LAYOUT.esp32, x: 560, y: 340 } };
+  const from = layout.anchorPositionForLayout('esp32.display-ground', moved);
+  const to = layout.anchorPositionForLayout('display.ground', moved);
+  assert.deepEqual(from, { x: 660, y: 1000 });
+  assert.equal(routeOrthogonal(from, to, 587), 'M660,1000 H587 V1030 H513');
 });
 
 test('every draggable component has only reroutable attached wires', () => {
@@ -122,6 +175,14 @@ test('every draggable component has only reroutable attached wires', () => {
       assert.ok(wire.tag.includes('data-reroutable'), `${id} has untracked ${wire.tag.match(/data-wire-id="([^"]+)"/)?.[1]}`);
     }
   }
+});
+
+test('unmodeled antenna and diode-lock assemblies are not draggable', () => {
+  const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  ['modem', 'ima1', 'ima2', 'ima3'].forEach((id) => {
+    const tag = html.match(new RegExp(`<g class="comp"[^>]*data-id="${id}"[^>]*>`))?.[0];
+    assert.doesNotMatch(tag, /data-layout-editable/);
+  });
 });
 
 test('schematic offers accessible guided and full-view controls', () => {
@@ -155,6 +216,14 @@ test('drag handles own touch gestures and hash transitions leave editor mode', (
   assert.match(html, /function finishLayoutDrag\(event\)[\s\S]*activeLayoutDrag=null/);
   assert.match(html, /if\(editingLayout&&schematicView\.view!=='full'\)exitLayoutEditor\(\);/);
   assert.match(html, /window\.addEventListener\('hashchange',\(\)=>\{readCfg\(\);applyConfig\(\);\}\)/);
+});
+
+test('static schematic stays visible and guided step four advances to full circuit', () => {
+  const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.doesNotMatch(html, /id="schematic-canvas"[^>]*hidden/);
+  assert.match(html, /canvas\.hidden=false/);
+  assert.match(html, /guidedNext\.textContent=guided&&schematicView\.step===4\?'Ver circuito completo':'Próxima conexão'/);
+  assert.match(html, /if\(schematicView\.step===4\)setSchematicView\('full',4\);/);
 });
 
 test('orthogonal router emits non-zero segments', () => {
@@ -223,7 +292,7 @@ test('every wire endpoint resolves to a real component-pin anchor', () => {
   const registeredAnchors = new Set([...html.matchAll(/data-anchor="([^"]+)"/g)].map(([, name]) => name));
   const registry = Object.fromEntries([...html.matchAll(/data-anchor="([^"]+)" cx="([^"]+)" cy="([^"]+)"/g)].map(([, name, x, y]) => [name, { x: Number(x), y: Number(y) }]));
   const wires = [...html.matchAll(/<path class="wire"[^>]*>/g)].map(([tag]) => tag);
-  assert.equal(wires.length, 48);
+  assert.equal(wires.length, 51);
   for (const wire of wires) {
     const from = wire.match(/data-from="([^"]+)"/)?.[1];
     const to = wire.match(/data-to="([^"]+)"/)?.[1];

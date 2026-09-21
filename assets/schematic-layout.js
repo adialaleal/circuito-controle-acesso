@@ -23,14 +23,14 @@ export const DEFAULT_LAYOUT = Object.freeze({
 
 export const STAGES = Object.freeze({
   1: ['fonte', 'p4', 'borne12', 'bornegnd', 'wire-01', 'wire-02', 'wire-07'],
-  2: ['lm2596', 'lm2596b', 'xl4016', 'borne5xl', 'cap', 'modem', 'antena', 'wire-03', 'wire-08', 'wire-28', 'wire-29', 'wire-30', 'wire-31', 'wire-32', 'wire-33', 'wire-34', 'wire-36', 'wire-37', 'wire-39', 'wire-40', 'wire-41'],
-  3: ['esp32', 'rele', 'wire-04', 'wire-05', 'wire-06', 'wire-12', 'wire-13', 'wire-14', 'wire-15', 'wire-16', 'wire-17', 'wire-18', 'wire-19', 'wire-35', 'wire-38', 'wire-42', 'wire-43', 'wire-44', 'wire-45'],
+  2: ['lm2596', 'lm2596b', 'xl4016', 'borne5xl', 'cap', 'modem', 'antena', 'wire-03', 'wire-08', 'wire-28', 'wire-29', 'wire-30', 'wire-31', 'wire-32', 'wire-33', 'wire-34', 'wire-36', 'wire-37', 'wire-39', 'wire-40', 'wire-41', 'wire-49', 'wire-50'],
+  3: ['esp32', 'rele', 'wire-04', 'wire-05', 'wire-06', 'wire-12', 'wire-13', 'wire-14', 'wire-15', 'wire-16', 'wire-17', 'wire-18', 'wire-19', 'wire-35', 'wire-38', 'wire-42', 'wire-43', 'wire-44', 'wire-45', 'wire-51'],
   4: ['d1', 'd2', 'd3', 'ima1', 'ima2', 'ima3', 'display', 'lock1', 'lock2', 'lock3', 'wire-09', 'wire-10', 'wire-11', 'wire-20', 'wire-21', 'wire-22', 'wire-23', 'wire-24', 'wire-25', 'wire-26', 'wire-27', 'wire-46', 'wire-47', 'wire-48'],
 });
 
 const LTE_ONLY_IDS = new Set(['lm2596b', 'cap', 'modem', 'antena', 'wire-28', 'wire-29', 'wire-30', 'wire-31', 'wire-32', 'wire-33', 'wire-42', 'wire-43', 'wire-44', 'wire-45']);
 const LM_POWER_IDS = new Set(['lm2596', 'lm2596b', 'wire-03', 'wire-08', 'wire-12', 'wire-14', 'wire-15', 'wire-28', 'wire-29', 'wire-30', 'wire-31', 'wire-32', 'wire-33']);
-const XL_POWER_IDS = new Set(['xl4016', 'borne5xl', 'wire-34', 'wire-35', 'wire-36', 'wire-37', 'wire-38', 'wire-39', 'wire-40', 'wire-41']);
+const XL_POWER_IDS = new Set(['xl4016', 'borne5xl', 'wire-34', 'wire-35', 'wire-36', 'wire-37', 'wire-38', 'wire-39', 'wire-40', 'wire-41', 'wire-49', 'wire-50', 'wire-51']);
 const TFT_ONLY_IDS = new Set(['display', 'wire-20', 'wire-21', 'wire-22', 'wire-23', 'wire-24', 'wire-25', 'wire-26', 'wire-27']);
 
 export const ANCHORS = Object.freeze({
@@ -39,7 +39,7 @@ export const ANCHORS = Object.freeze({
   'bornegnd.in-ground': { x: 450, y: 145 }, 'bornegnd.out-ground': { x: 520, y: 168 }, 'bornegnd.ground-rail': { x: 620, y: 145 }, 'bornegnd.lte-ground': { x: 400, y: 230 },
   'lm2596.in-plus': { x: 100, y: 300 }, 'lm2596.in-ground': { x: 160, y: 300 }, 'lm2596.out-plus': { x: 100, y: 430 }, 'lm2596.out-ground': { x: 160, y: 430 }, 'lm2596.5v-rail': { x: 520, y: 860 },
   'lm2596b.in-plus': { x: 340, y: 250 }, 'lm2596b.in-ground': { x: 400, y: 250 }, 'lm2596b.out-plus': { x: 340, y: 420 }, 'lm2596b.modem-plus': { x: 340, y: 380 }, 'lm2596b.out-ground': { x: 400, y: 380 },
-  'xl4016.input-rail': { x: 100, y: 430 }, 'xl4016.in-ground': { x: 160, y: 430 }, 'xl4016.modem-plus': { x: 340, y: 420 }, 'xl4016.modem-ground': { x: 400, y: 420 },
+  'xl4016.input-plus': { x: 100, y: 290 }, 'xl4016.input-ground': { x: 160, y: 290 }, 'xl4016.output-plus': { x: 100, y: 430 }, 'xl4016.output-ground': { x: 160, y: 430 }, 'xl4016.modem-plus': { x: 340, y: 420 }, 'xl4016.modem-ground': { x: 400, y: 420 },
   'borne5xl.plus': { x: 100, y: 440 }, 'borne5xl.plus-rail': { x: 190, y: 455 }, 'borne5xl.ground': { x: 160, y: 480 }, 'borne5xl.ground-rail': { x: 190, y: 495 }, 'cap.plus': { x: 356, y: 420 }, 'cap.ground': { x: 384, y: 420 },
   'modem.vin': { x: 340, y: 470 }, 'modem.ground': { x: 400, y: 470 }, 'modem.ground-cap': { x: 400, y: 420 }, 'modem.uart-tx': { x: 475, y: 530 }, 'modem.uart-rx': { x: 475, y: 560 }, 'modem.pwrkey': { x: 475, y: 590 }, 'modem.reset': { x: 475, y: 620 },
   'esp32.vin': { x: 548, y: 770 }, 'esp32.ground': { x: 548, y: 740 }, 'esp32.ground-out': { x: 772, y: 740 }, 'esp32.3v3': { x: 772, y: 770 }, 'esp32.gpio22': { x: 772, y: 380 }, 'esp32.gpio21': { x: 772, y: 470 }, 'esp32.gpio16': { x: 772, y: 620 },
@@ -97,9 +97,14 @@ export function routeOrthogonal(from, to, lane) {
 }
 
 export function routeOrthogonalVia(from, via, to) {
-  const incoming = routeOrthogonal(from, via, Math.round((from.x + via.x) / 2));
-  const outgoing = routeOrthogonal(via, to, Math.round((via.x + to.x) / 2));
-  return `${incoming} ${outgoing}`;
+  return routeOrthogonalThrough([from, via, to]);
+}
+
+export function routeOrthogonalThrough(points) {
+  return points.slice(1).map((to, index) => {
+    const from = points[index];
+    return routeOrthogonal(from, to, Math.round((from.x + to.x) / 2));
+  }).join(' ');
 }
 
 export function layoutStorageKey(variant) {
@@ -141,6 +146,9 @@ export function anchorPosition(name) {
 
 const SHARED_JUNCTION_OWNERS = Object.freeze({
   'lm2596.5v-rail': 'esp32',
+  'borne12.lock1-rail': 'rele',
+  'borne12.lock2-rail': 'rele',
+  'borne12.lte-plus': 'lm2596',
 });
 
 export function anchorLayoutOwner(name) {

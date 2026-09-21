@@ -57,6 +57,34 @@ test('rerouted endpoints follow the current component layout', () => {
   );
 });
 
+test('moving ESP32 reroutes wire-17 from its moved GPIO22 endpoint', () => {
+  const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const wire17 = html.match(/<path class="wire"[^>]*data-wire-id="wire-17"[^>]*>/)?.[0];
+  const moved = { ...layout.DEFAULT_LAYOUT, esp32: { ...layout.DEFAULT_LAYOUT.esp32, x: 600, y: 300 } };
+  const from = layout.anchorPositionForLayout('esp32.gpio22', moved);
+  const to = layout.anchorPositionForLayout('rele.in1', moved);
+  assert.ok(wire17?.includes('data-reroutable'));
+  assert.deepEqual(from, { x: 812, y: 380 });
+  assert.equal(routeOrthogonal(from, to, Math.round((from.x + to.x) / 2)), 'M812,380 H850 V420 H888');
+});
+
+test('every draggable component has only reroutable attached wires', () => {
+  const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const draggable = new Set([...html.matchAll(/<g class="comp"[^>]*data-layout-id="([^"]+)"[^>]*data-layout-editable/g)].map(([, id]) => id));
+  const wires = [...html.matchAll(/<path class="wire"[^>]*>/g)].map(([tag]) => ({
+    tag,
+    from: tag.match(/data-from="([^"]+)"/)?.[1]?.split('.')[0],
+    to: tag.match(/data-to="([^"]+)"/)?.[1]?.split('.')[0],
+  }));
+  assert.ok(draggable.size > 0);
+  for (const id of draggable) {
+    assert.ok(wires.some(({ from, to }) => from === id || to === id), `${id} has no anchored connection`);
+    for (const wire of wires.filter(({ from, to }) => from === id || to === id)) {
+      assert.ok(wire.tag.includes('data-reroutable'), `${id} has untracked ${wire.tag.match(/data-wire-id="([^"]+)"/)?.[1]}`);
+    }
+  }
+});
+
 test('schematic offers accessible guided and full-view controls', () => {
   const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   assert.match(html, /id="mode-guided"[^>]*aria-pressed/);
@@ -78,6 +106,16 @@ test('full view provides an isolated local layout editor controlled by drag hand
   assert.match(html, /\[data-drag-handle\]/);
   assert.match(html, /layoutModel\.layoutStorageKey\(cfg\)/);
   assert.match(html, /localStorage\.removeItem\(layoutModel\.layoutStorageKey\(cfg\)\)/);
+});
+
+test('drag handles own touch gestures and hash transitions leave editor mode', () => {
+  const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(html, /\.drag-handle\{[^}]*touch-action:none/);
+  assert.doesNotMatch(html, /(?:#schematic|\.canvas-wrap svg)\{[^}]*touch-action:none/);
+  assert.match(html, /handle\.addEventListener\('pointercancel',finishLayoutDrag\)/);
+  assert.match(html, /function finishLayoutDrag\(event\)[\s\S]*activeLayoutDrag=null/);
+  assert.match(html, /if\(editingLayout&&schematicView\.view!=='full'\)exitLayoutEditor\(\);/);
+  assert.match(html, /window\.addEventListener\('hashchange',\(\)=>\{readCfg\(\);applyConfig\(\);\}\)/);
 });
 
 test('orthogonal router emits non-zero segments', () => {
@@ -130,6 +168,15 @@ test('saved coordinates outside the SVG canvas fall back to defaults', () => {
     { esp32: { x: 520, y: 420 } },
   );
   assert.deepEqual(result.esp32, { x: 520, y: 420 });
+});
+
+test('saved coordinates at SVG edges or beyond component bounds fall back to defaults', () => {
+  const defaults = { esp32: { x: 520, y: 420 } };
+  assert.deepEqual(sanitizePositions({ esp32: { x: 1560, y: 1210 } }, defaults).esp32, defaults.esp32);
+  assert.deepEqual(
+    sanitizePositions({ esp32: { x: 1361, y: 420 } }, defaults, { width: 1560, height: 985, positions: { esp32: { minX: 0, minY: 0, maxX: 1360, maxY: 800 } } }).esp32,
+    defaults.esp32,
+  );
 });
 
 test('every wire endpoint resolves to a real component-pin anchor', () => {

@@ -101,14 +101,30 @@ export function layoutStorageKey(variant) {
   return `schematic-layout:v1:${selected.tft}:${selected.net}:${selected.power}`;
 }
 
-export function sanitizePositions(saved, defaults = DEFAULT_LAYOUT) {
+export function layoutPositionLimits(id, bounds = {}) {
+  const width = Number.isFinite(bounds.width) && bounds.width > 0 ? bounds.width : 1560;
+  const height = Number.isFinite(bounds.height) && bounds.height > 0 ? bounds.height : 1210;
+  const custom = bounds.positions?.[id] ?? {};
+  return {
+    minX: Number.isFinite(custom.minX) ? custom.minX : 0,
+    minY: Number.isFinite(custom.minY) ? custom.minY : 0,
+    maxX: Number.isFinite(custom.maxX) ? custom.maxX : width,
+    maxY: Number.isFinite(custom.maxY) ? custom.maxY : height,
+    exclusiveMaxX: !Number.isFinite(custom.maxX),
+    exclusiveMaxY: !Number.isFinite(custom.maxY),
+  };
+}
+
+export function sanitizePositions(saved, defaults = DEFAULT_LAYOUT, bounds = {}) {
   const source = saved && typeof saved === 'object' ? saved : {};
   return Object.fromEntries(Object.entries(defaults).map(([id, fallback]) => {
     const position = source[id];
+    const limits = layoutPositionLimits(id, bounds);
     const valid = position && typeof position === 'object'
       && Number.isFinite(position.x) && Number.isFinite(position.y)
-      && position.x >= 0 && position.x <= 1560
-      && position.y >= 0 && position.y <= 1210;
+      && position.x >= limits.minX && position.y >= limits.minY
+      && (limits.exclusiveMaxX ? position.x < limits.maxX : position.x <= limits.maxX)
+      && (limits.exclusiveMaxY ? position.y < limits.maxY : position.y <= limits.maxY);
     return [id, valid ? { ...fallback, x: position.x, y: position.y } : { ...fallback }];
   }));
 }

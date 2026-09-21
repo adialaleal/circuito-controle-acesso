@@ -4,6 +4,112 @@ import fs from 'node:fs';
 import * as layout from '../assets/schematic-layout.js';
 import { ANCHORS, anchorPosition, layoutStorageKey, normalizeView, routeOrthogonal, sanitizePositions, visibleIds } from '../assets/schematic-layout.js';
 
+function extractRenderLayout(html) {
+  const start = html.indexOf('function layoutPositionChanged(id, layout){');
+  const end = html.indexOf('function applyLayout(positions){', start);
+  assert.ok(start >= 0 && end > start, 'renderLayout source is available');
+  return new Function('svg', 'layoutModel', `${html.slice(start, end)}\nreturn renderLayout;`);
+}
+
+function fakeWire(tag) {
+  const attributes = new Map([...tag.matchAll(/([\w-]+)="([^"]*)"/g)].map(([, name, value]) => [name, value]));
+  return {
+    dataset: Object.fromEntries([...attributes]
+      .filter(([name]) => name.startsWith('data-'))
+      .map(([name, value]) => [name.slice(5).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()), value])),
+    getAttribute(name) { return attributes.get(name) ?? null; },
+    setAttribute(name, value) { attributes.set(name, String(value)); },
+  };
+}
+
+function renderWireRoutes(ids, positions) {
+  const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const wires = ids.map((id) => {
+    const tag = html.match(new RegExp(`<path class="wire"[^>]*data-wire-id="${id}"[^>]*>`))?.[0];
+    assert.ok(tag, `${id} exists`);
+    return [id, fakeWire(tag)];
+  });
+  const svg = {
+    querySelectorAll(selector) {
+      if (selector === '.comp[data-layout-id]' || selector === '.wire-hit[data-wire-id]') return [];
+      if (selector === '.wire[data-reroutable]') return wires.map(([, wire]) => wire);
+      return [];
+    },
+  };
+  extractRenderLayout(html)(svg, layout)(positions);
+  return Object.fromEntries(wires.map(([id, wire]) => [id, wire.getAttribute('d')]));
+}
+
+function renderJunction(anchor, positions) {
+  const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const tag = html.match(new RegExp(`<circle class="dot"[^>]*data-junction-anchor="${anchor}"[^>]*>`))?.[0];
+  assert.ok(tag, `${anchor} has a rendered junction dot`);
+  const dot = fakeWire(tag);
+  const svg = {
+    querySelectorAll(selector) {
+      if (selector === '[data-junction-anchor]') return [dot];
+      return [];
+    },
+  };
+  extractRenderLayout(html)(svg, layout)(positions);
+  return { x: Number(dot.getAttribute('cx')), y: Number(dot.getAttribute('cy')) };
+}
+
+function pathContainsPoint(path, point) {
+  let current = null;
+  for (const [, command, first, second] of path.matchAll(/([MHV])(-?\d+)(?:,(-?\d+))?/g)) {
+    const next = command === 'M' ? { x: Number(first), y: Number(second) }
+      : command === 'H' ? { x: Number(first), y: current.y }
+        : { x: current.x, y: Number(first) };
+    if (current && ((current.x === next.x && point.x === current.x && point.y >= Math.min(current.y, next.y) && point.y <= Math.max(current.y, next.y))
+      || (current.y === next.y && point.y === current.y && point.x >= Math.min(current.x, next.x) && point.x <= Math.max(current.x, next.x)))) return true;
+    current = next;
+  }
+  return current?.x === point.x && current?.y === point.y;
+}
+
+test('renderLayout keeps LM and LTE ground paths joined at their shared Wago junction', () => {
+  const moved = { ...layout.DEFAULT_LAYOUT, lm2596: { ...layout.DEFAULT_LAYOUT.lm2596, x: 90, y: 300 } };
+  const routes = renderWireRoutes(['wire-08', 'wire-29'], moved);
+  const junction = layout.anchorPositionForLayout('bornegnd.lte-ground', moved);
+  assert.equal(pathContainsPoint(routes['wire-08'], junction), true);
+  assert.equal(pathContainsPoint(routes['wire-29'], junction), true);
+});
+
+test('renderLayout keeps TFT ground trunk joined while ESP32 moves vertically', () => {
+  const moved = { ...layout.DEFAULT_LAYOUT, esp32: { ...layout.DEFAULT_LAYOUT.esp32, x: 560, y: 340 } };
+  const routes = renderWireRoutes(['wire-09', 'wire-21'], moved);
+  const junction = layout.anchorPositionForLayout('esp32.display-ground', moved);
+  assert.equal(pathContainsPoint(routes['wire-09'], junction), true);
+  assert.equal(pathContainsPoint(routes['wire-21'], junction), true);
+});
+
+test('renderLayout moves the visible TFT ground junction with its GND trunk owner', () => {
+  const moved = { ...layout.DEFAULT_LAYOUT, bornegnd: { ...layout.DEFAULT_LAYOUT.bornegnd, x: 490, y: 120 } };
+  assert.deepEqual(renderJunction('esp32.display-ground', moved), layout.anchorPositionForLayout('esp32.display-ground', moved));
+});
+
+test('renderLayout routes relay locks through diodes and Wago ground through every lock tap', () => {
+  const relayMoved = { ...layout.DEFAULT_LAYOUT, rele: { ...layout.DEFAULT_LAYOUT.rele, x: 1020, y: 330 } };
+  const relayRoutes = renderWireRoutes(['wire-09', 'wire-46', 'wire-47', 'wire-48'], relayMoved);
+  for (const [wire, terminal] of [['wire-46', 'd1.lock-input'], ['wire-47', 'd2.lock-input'], ['wire-48', 'd3.lock-input']]) {
+    assert.equal(pathContainsPoint(relayRoutes[wire], layout.anchorPositionForLayout(terminal, relayMoved)), true, `${wire} joins its diode`);
+  }
+  assert.equal(pathContainsPoint(relayRoutes['wire-09'], layout.anchorPositionForLayout('d1.ground-out', relayMoved)), true);
+
+  const groundMoved = { ...layout.DEFAULT_LAYOUT, bornegnd: { ...layout.DEFAULT_LAYOUT.bornegnd, x: 490, y: 120 } };
+  const groundRoutes = renderWireRoutes(['wire-09', 'wire-10', 'wire-11', 'wire-21'], groundMoved);
+  for (const junction of ['ima2.ground-rail', 'ima3.ground-rail', 'esp32.display-ground']) {
+    const point = layout.anchorPositionForLayout(junction, groundMoved);
+    assert.equal(pathContainsPoint(groundRoutes['wire-09'], point), true, `ground trunk reaches ${junction}`);
+    if (junction !== 'esp32.display-ground') {
+      const branch = junction.startsWith('ima2') ? 'wire-10' : 'wire-11';
+      assert.equal(pathContainsPoint(groundRoutes[branch], point), true, `${branch} joins ${junction}`);
+    }
+  }
+  assert.equal(pathContainsPoint(groundRoutes['wire-21'], layout.anchorPositionForLayout('esp32.display-ground', groundMoved)), true);
+});
+
 test('old hashes default to guided step 1', () => {
   assert.deepEqual(normalizeView({}), { view: 'guided', step: 1 });
   assert.deepEqual(normalizeView({ view: 'full', step: '9' }), { view: 'full', step: 4 });
@@ -150,14 +256,6 @@ test('shared relay and modem taps follow their moved assemblies', () => {
     layout.anchorPositionForLayout('lm2596.in-plus', lm),
   ]), /H380 M380,210/);
   assert.match(routeOrthogonal(modemTap, layout.anchorPositionForLayout('lm2596b.in-plus', lm), 360), /^M380,210 /);
-});
-
-test('moving ESP32 vertically reroutes the TFT ground trunk from its moved pin', () => {
-  const moved = { ...layout.DEFAULT_LAYOUT, esp32: { ...layout.DEFAULT_LAYOUT.esp32, x: 560, y: 340 } };
-  const from = layout.anchorPositionForLayout('esp32.display-ground', moved);
-  const to = layout.anchorPositionForLayout('display.ground', moved);
-  assert.deepEqual(from, { x: 660, y: 1000 });
-  assert.equal(routeOrthogonal(from, to, 587), 'M660,1000 H587 V1030 H513');
 });
 
 test('every draggable component has only reroutable attached wires', () => {

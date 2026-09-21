@@ -46,6 +46,9 @@ export const ANCHORS = Object.freeze({
   'esp32.display-vcc': { x: 700, y: 860 }, 'esp32.display-ground': { x: 660, y: 960 }, 'esp32.spi-sdi': { x: 772, y: 710 }, 'esp32.spi-sck': { x: 772, y: 650 }, 'esp32.spi-dc': { x: 772, y: 680 }, 'esp32.spi-cs': { x: 772, y: 350 }, 'esp32.spi-reset': { x: 772, y: 530 }, 'esp32.display-led': { x: 780, y: 770 },
   'esp32.gpio33': { x: 544, y: 530 }, 'esp32.gpio25': { x: 544, y: 560 }, 'esp32.gpio26': { x: 544, y: 590 }, 'esp32.gpio27': { x: 544, y: 620 },
   'rele.power-rail': { x: 1192, y: 590 }, 'rele.lock1-input': { x: 1192, y: 390 }, 'rele.lock2-input': { x: 1192, y: 490 }, 'rele.nc1': { x: 1192, y: 420 }, 'rele.nc2': { x: 1192, y: 520 }, 'rele.nc3': { x: 1192, y: 620 }, 'rele.ground': { x: 888, y: 380 }, 'rele.vcc': { x: 888, y: 580 }, 'rele.vcc-rail': { x: 988, y: 782 }, 'rele.in1': { x: 888, y: 420 }, 'rele.in2': { x: 888, y: 460 }, 'rele.in3': { x: 888, y: 500 },
+  'd1.lock-input': { x: 1318, y: 320 }, 'd1.ground-out': { x: 1318, y: 355 },
+  'd2.lock-input': { x: 1318, y: 480 }, 'd2.ground-out': { x: 1318, y: 515 },
+  'd3.lock-input': { x: 1318, y: 640 }, 'd3.ground-out': { x: 1318, y: 675 },
   'display.vcc': { x: 513, y: 1012 }, 'display.ground': { x: 513, y: 1030 }, 'display.sdi': { x: 513, y: 1048 }, 'display.sck': { x: 513, y: 1066 }, 'display.dc': { x: 513, y: 1084 }, 'display.cs': { x: 513, y: 1102 }, 'display.reset': { x: 513, y: 1120 }, 'display.led': { x: 513, y: 1138 },
   'ima1.plus': { x: 1340, y: 320 }, 'ima1.ground': { x: 1340, y: 355 }, 'ima2.ground-rail': { x: 1316, y: 515 }, 'ima2.plus': { x: 1340, y: 480 }, 'ima2.ground': { x: 1340, y: 515 }, 'ima3.ground-rail': { x: 1316, y: 675 }, 'ima3.plus': { x: 1340, y: 640 }, 'ima3.ground': { x: 1340, y: 675 },
 });
@@ -149,6 +152,7 @@ const SHARED_JUNCTION_OWNERS = Object.freeze({
   'borne12.lock1-rail': 'rele',
   'borne12.lock2-rail': 'rele',
   'borne12.lte-plus': 'lm2596',
+  'esp32.display-ground': 'bornegnd',
 });
 
 export function anchorLayoutOwner(name) {

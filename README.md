@@ -22,6 +22,29 @@ A escolha fica no link (`#tft=0&net=lte&ap=1`) para compartilhar, e a
 "Ficha da configuração" na lateral mostra as três `#define` do firmware
 prontas para copiar.
 
+### Leitura guiada e organização do esquema
+
+O esquema 2D oferece três formas de uso:
+
+- **Montagem guiada** mostra somente a parte necessária para a etapa atual.
+  As quatro etapas são: (1) fonte e distribuição 12 V; (2) conversão para
+  5 V e rede; (3) controle e relés; e (4) travas, diodos e tela.
+- **Circuito completo** mostra toda a topologia aplicável à configuração,
+  organizada nas zonas de potência, controle e saídas.
+- **Editar layout** (disponível no circuito completo) permite arrastar as
+  alças dos módulos para facilitar a leitura. O botão **Restaurar layout**
+  volta à disposição original daquela configuração.
+
+O link também preserva a forma de leitura com `view=guided|full` e
+`step=1..4`, além de `tft`, `net`, `ap` e `power`. Assim, um link como
+`#tft=0&net=lte&ap=0&power=xl4016&view=guided&step=2` pode compartilhar a
+etapa de montagem, mas não as posições movidas. Essas posições são locais ao
+navegador (`localStorage`) e isoladas por variante elétrica.
+
+Arrastar um módulo altera apenas sua posição visual: os fios acompanham os
+terminais para manter a leitura contínua, sem criar, remover ou alterar
+qualquer conexão elétrica.
+
 ## Conteúdo
 - `index.html` — esquema 2D interativo (hover pino a pino) + montagem 3D + lista de compras
 - `wokwi/` — firmware (`sketch.ino`, o mesmo para simulação e placa real) e diagrama Wokwi

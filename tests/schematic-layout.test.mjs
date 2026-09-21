@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import * as layout from '../assets/schematic-layout.js';
 import { ANCHORS, anchorPosition, layoutStorageKey, normalizeView, routeOrthogonal, visibleIds } from '../assets/schematic-layout.js';
 
 test('old hashes default to guided step 1', () => {
@@ -19,6 +20,41 @@ test('guided stages are cumulative and hide output locks before step 4', () => {
   assert.ok(step3.includes('esp32') && step3.includes('modem') && step3.includes('rele'));
   assert.ok(!step3.includes('lock1') && !step3.includes('lock2') && !step3.includes('lock3'));
   assert.ok(visibleIds(4, { tft: false, net: 'lte', power: 'xl4016' }).includes('lock3'));
+});
+
+test('guided variants never expose a wire before both endpoint components', () => {
+  const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const wires = [...html.matchAll(/<path class="wire"[^>]*>/g)].map(([tag]) => ({
+    id: tag.match(/data-wire-id="([^"]+)"/)?.[1],
+    from: tag.match(/data-from="([^"]+)"/)?.[1].split('.')[0],
+    to: tag.match(/data-to="([^"]+)"/)?.[1].split('.')[0],
+  }));
+  const variants = [
+    { tft: false, net: 'wifi', power: 'lm2596' }, { tft: true, net: 'wifi', power: 'lm2596' },
+    { tft: false, net: 'dual', power: 'lm2596' }, { tft: true, net: 'dual', power: 'lm2596' },
+    { tft: false, net: 'dual', power: 'xl4016' }, { tft: true, net: 'dual', power: 'xl4016' },
+    { tft: false, net: 'lte', power: 'lm2596' }, { tft: true, net: 'lte', power: 'lm2596' },
+    { tft: false, net: 'lte', power: 'xl4016' }, { tft: true, net: 'lte', power: 'xl4016' },
+  ];
+  for (const variant of variants) {
+    for (let step = 1; step <= 4; step += 1) {
+      const visible = new Set(visibleIds(step, variant));
+      for (const wire of wires.filter(({ id }) => visible.has(id))) {
+        assert.ok(visible.has(wire.from), `${JSON.stringify(variant)} step ${step}: ${wire.id} needs ${wire.from}`);
+        assert.ok(visible.has(wire.to), `${JSON.stringify(variant)} step ${step}: ${wire.id} needs ${wire.to}`);
+      }
+    }
+  }
+});
+
+test('rerouted endpoints follow the current component layout', () => {
+  assert.equal(typeof layout.anchorPositionForLayout, 'function');
+  const moved = { ...layout.DEFAULT_LAYOUT, p4: { ...layout.DEFAULT_LAYOUT.p4, x: 364, y: 118 } };
+  assert.deepEqual(layout.anchorPositionForLayout('p4.input', moved), { x: 346, y: 155 });
+  assert.equal(
+    routeOrthogonal(layout.anchorPositionForLayout('fonte.p4-plus', moved), layout.anchorPositionForLayout('p4.input', moved), 280),
+    'M220,125 H280 V155 H346',
+  );
 });
 
 test('schematic offers accessible guided and full-view controls', () => {

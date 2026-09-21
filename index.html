@@ -87,6 +87,8 @@
     position:relative;
   }
   .canvas-wrap svg{display:block;min-width:1050px;width:100%;height:auto}
+  .schematic-status{margin:0;padding:12px 14px;color:var(--muted);font-family:var(--mono);font-size:12px;border:1px dashed var(--line);border-radius:10px}
+  .schematic-status[data-state="failed"]{color:#ff8f8f;border-color:#7a4141}
   .schematic-mode{
     display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
     margin:0 0 10px;padding:9px 11px;background:var(--panel);border:1px solid var(--line);border-radius:10px;
@@ -377,21 +379,22 @@
     <div id="view2d">
       <div class="schematic-mode" role="toolbar" aria-label="Visualização do esquema">
         <div class="mode-switch">
-          <button id="mode-guided" type="button" aria-pressed="true">Montagem guiada</button>
-          <button id="mode-full" type="button" aria-pressed="false">Circuito completo</button>
+          <button id="mode-guided" type="button" aria-pressed="true" disabled>Montagem guiada</button>
+          <button id="mode-full" type="button" aria-pressed="false" disabled>Circuito completo</button>
         </div>
         <div class="guided-nav">
-          <button id="guided-back" type="button">Voltar</button>
+          <button id="guided-back" type="button" disabled>Voltar</button>
           <ol id="guided-stepper" class="guided-stepper" aria-label="Etapas da montagem">
-            <li><button type="button" data-step="1" aria-label="Etapa 1">1</button></li>
-            <li><button type="button" data-step="2" aria-label="Etapa 2">2</button></li>
-            <li><button type="button" data-step="3" aria-label="Etapa 3">3</button></li>
-            <li><button type="button" data-step="4" aria-label="Etapa 4">4</button></li>
+            <li><button type="button" data-step="1" aria-label="Etapa 1" disabled>1</button></li>
+            <li><button type="button" data-step="2" aria-label="Etapa 2" disabled>2</button></li>
+            <li><button type="button" data-step="3" aria-label="Etapa 3" disabled>3</button></li>
+            <li><button type="button" data-step="4" aria-label="Etapa 4" disabled>4</button></li>
           </ol>
-          <button id="guided-next" type="button">Próxima conexão</button>
+          <button id="guided-next" type="button" disabled>Próxima conexão</button>
         </div>
       </div>
-      <div class="canvas-wrap">
+      <p id="schematic-status" class="schematic-status" role="status" data-state="loading">Carregando a visualização guiada…</p>
+      <div id="schematic-canvas" class="canvas-wrap" hidden>
       <svg id="schematic" viewBox="0 0 1560 1210" xmlns="http://www.w3.org/2000/svg" aria-label="Esquema elétrico do controle de acesso">
         <defs>
           <linearGradient id="gBlk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#24272d"/><stop offset=".5" stop-color="#17191e"/><stop offset="1" stop-color="#0f1115"/></linearGradient>
@@ -595,21 +598,21 @@
         </g>
 
         <!-- rótulos de rede -->
-        <g fill="var(--muted)">
-          <text class="netlabel" x="900" y="28" fill="var(--w12)">barramento +12V</text>
-          <text class="netlabel" x="900" y="952" fill="var(--wgnd)">barramento GND (0V)</text>
-          <text class="netlabel" x="300" y="852" fill="var(--w5)">+5V (saída do step-down)</text>
-          <text class="netlabel" x="806" y="372" fill="var(--ws1)">GPIO22→IN1</text>
-          <text class="netlabel" x="852" y="446" fill="var(--ws2)">GPIO21→IN2</text>
-          <text class="netlabel" x="866" y="612" fill="var(--ws3)">GPIO16→IN3</text>
-          <text class="netlabel" data-opt="tft" x="840" y="990" fill="var(--wdisp)">SPI do display · 5 fios</text>
-          <text class="netlabel" data-opt="lte" x="483" y="522" fill="var(--wlte)">UART1 · 3,3V</text>
-          <text class="netlabel" data-opt="lte" x="348" y="398" fill="var(--w5m)">+5V do modem</text>
+        <g id="net-labels" fill="var(--muted)">
+          <text class="netlabel" data-stage="1" x="900" y="28" fill="var(--w12)">barramento +12V</text>
+          <text class="netlabel" data-stage="1" x="900" y="952" fill="var(--wgnd)">barramento GND (0V)</text>
+          <text class="netlabel" data-stage="2" x="300" y="852" fill="var(--w5)">+5V (saída do step-down)</text>
+          <text class="netlabel" data-stage="3" x="806" y="372" fill="var(--ws1)">GPIO22→IN1</text>
+          <text class="netlabel" data-stage="3" x="852" y="446" fill="var(--ws2)">GPIO21→IN2</text>
+          <text class="netlabel" data-stage="3" x="866" y="612" fill="var(--ws3)">GPIO16→IN3</text>
+          <text class="netlabel" data-stage="4" data-opt="tft" x="840" y="990" fill="var(--wdisp)">SPI do display · 5 fios</text>
+          <text class="netlabel" data-stage="3" data-opt="lte" x="483" y="522" fill="var(--wlte)">UART1 · 3,3V</text>
+          <text class="netlabel" data-stage="2" data-opt="lte" x="348" y="398" fill="var(--w5m)">+5V do modem</text>
         </g>
 
         <!-- ================= STATUS DE REDE (acima da antena do ESP32) ================= -->
-        <g id="netstatus">
-          <g id="net-waves" data-opt="radio" stroke="#38bdf8">
+        <g id="netstatus" data-stage="3">
+          <g id="net-waves" data-stage="3" data-opt="radio" stroke="#38bdf8">
             <path class="wave" d="M680.1,290.1 A14,14 0 0 1 699.9,290.1"/>
             <path class="wave" d="M671.6,281.6 A26,26 0 0 1 708.4,281.6"/>
             <path class="wave" d="M663.1,273.1 A38,38 0 0 1 716.9,273.1"/>
@@ -1300,12 +1303,19 @@
 const CFG_KEY='cfg-montagem';
 const cfg={tft:true,net:'wifi',ap:false,power:'xl4016'};
 let layoutModel=null;
+let layoutLoadState='loading';
 let schematicView={view:'guided',step:1};
 const layoutModelReady=import('./assets/schematic-layout.js').then(model=>{
   layoutModel=model;
+  layoutLoadState='ready';
   applySchematicView();
   return model;
-}).catch(()=>null);
+}).catch(error=>{
+  layoutLoadState='failed';
+  console.error('Não foi possível carregar o modelo da visualização guiada.',error);
+  applySchematicView();
+  return null;
+});
 function normalizeSchematicView(value={}){
   if(layoutModel)return layoutModel.normalizeView(value);
   const step=Number.parseInt(value.step,10);
@@ -1523,43 +1533,79 @@ const GUIDED_COPY=Object.freeze({
 });
 const FULL_COPY={title:'Circuito completo',desc:'Todas as conexões aplicáveis à configuração aparecem por zona: potência, controle e saídas.'};
 
+function setSchematicLoadState(state){
+  const canvas=document.getElementById('schematic-canvas');
+  const status=document.getElementById('schematic-status');
+  const ready=state==='ready';
+  canvas.hidden=!ready;
+  status.hidden=ready;
+  status.dataset.state=state;
+  status.textContent=state==='failed'
+    ? 'Não foi possível carregar a visualização guiada. Recarregue a página para tentar novamente.'
+    : 'Carregando a visualização guiada…';
+  document.querySelectorAll('.schematic-mode button').forEach(button=>{button.disabled=!ready;});
+}
 function setStageHidden(element, hidden){
   element.classList.toggle('is-stage-hidden',hidden);
   element.toggleAttribute('hidden',hidden);
   element.setAttribute('aria-hidden',String(hidden));
+}
+function currentSchematicLayout(){
+  const current={...layoutModel.DEFAULT_LAYOUT};
+  svg.querySelectorAll('.comp[data-layout-id]').forEach(component=>{
+    const baseline=layoutModel.DEFAULT_LAYOUT[component.dataset.layoutId];
+    if(!baseline)return;
+    const explicitX=Number(component.dataset.layoutX);
+    const explicitY=Number(component.dataset.layoutY);
+    if(Number.isFinite(explicitX)&&Number.isFinite(explicitY)){
+      current[component.dataset.layoutId]={...baseline,x:explicitX,y:explicitY};
+      return;
+    }
+    const translation=component.getAttribute('transform')?.match(/translate\(\s*(-?\d+(?:\.\d+)?)?(?:[ ,]+(-?\d+(?:\.\d+)?))?\s*\)/);
+    const x=Number(translation?.[1]||0);
+    const y=Number(translation?.[2]||0);
+    current[component.dataset.layoutId]={...baseline,x:baseline.x+x,y:baseline.y+y};
+  });
+  return current;
 }
 function writeSchematicHash(){
   const hash='#tft='+(cfg.tft?1:0)+'&net='+cfg.net+'&ap='+(cfg.ap?1:0)+'&power='+cfg.power+'&view='+schematicView.view+'&step='+schematicView.step;
   if(location.hash!==hash)history.replaceState(null,'',hash);
 }
 function applySchematicView(){
+  if(layoutLoadState!=='ready'||!layoutModel){
+    setSchematicLoadState(layoutLoadState);
+    return;
+  }
+  setSchematicLoadState('ready');
   const guided=schematicView.view==='guided';
   const copy=guided?GUIDED_COPY[schematicView.step]:FULL_COPY;
-  const visible=layoutModel?new Set(layoutModel.visibleIds(guided?schematicView.step:4,cfg)):null;
+  const visible=new Set(layoutModel.visibleIds(guided?schematicView.step:4,cfg));
   const selectable=svg.querySelectorAll('.comp[data-id],.wire[data-wire-id],.wire-hit[data-wire-id]');
   selectable.forEach(element=>{
     const id=element.dataset.id||element.dataset.wireId;
-    setStageHidden(element,visible?(!visible.has(id)):false);
+    setStageHidden(element,!visible.has(id));
   });
   const labels=svg.querySelector('#zone-labels');
   if(labels)setStageHidden(labels,guided);
   const dots=svg.querySelector('#dots');
   if(dots)setStageHidden(dots,guided);
+  svg.querySelectorAll('[data-stage]').forEach(element=>{
+    setStageHidden(element,guided&&Number(element.dataset.stage)>schematicView.step);
+  });
 
+  const currentLayout=guided?null:currentSchematicLayout();
   svg.querySelectorAll('.comp[data-layout-id]').forEach(component=>{
-    const layout=layoutModel&&layoutModel.DEFAULT_LAYOUT[component.dataset.layoutId];
-    if(!layout||guided){component.removeAttribute('transform');return;}
-    const x=Number(component.dataset.layoutX||layout.x);
-    const y=Number(component.dataset.layoutY||layout.y);
-    component.dataset.layoutX=String(x);
-    component.dataset.layoutY=String(y);
-    component.setAttribute('transform','translate('+(x-layout.x)+' '+(y-layout.y)+')');
+    const baseline=layoutModel.DEFAULT_LAYOUT[component.dataset.layoutId];
+    if(!baseline||guided){component.removeAttribute('transform');return;}
+    const position=currentLayout[component.dataset.layoutId];
+    component.setAttribute('transform','translate('+(position.x-baseline.x)+' '+(position.y-baseline.y)+')');
   });
   svg.querySelectorAll('.wire[data-reroutable]').forEach(wire=>{
     if(!wire.dataset.originalRoute)wire.dataset.originalRoute=wire.getAttribute('d');
-    if(guided||!layoutModel){wire.setAttribute('d',wire.dataset.originalRoute);return;}
-    const from=layoutModel.anchorPosition(wire.dataset.from);
-    const to=layoutModel.anchorPosition(wire.dataset.to);
+    if(guided){wire.setAttribute('d',wire.dataset.originalRoute);return;}
+    const from=layoutModel.anchorPositionForLayout(wire.dataset.from,currentLayout);
+    const to=layoutModel.anchorPositionForLayout(wire.dataset.to,currentLayout);
     wire.setAttribute('d',layoutModel.routeOrthogonal(from,to,Math.round((from.x+to.x)/2)));
   });
   svg.querySelectorAll('.wire-hit[data-wire-id]').forEach(hit=>{

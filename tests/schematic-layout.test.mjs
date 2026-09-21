@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import * as layout from '../assets/schematic-layout.js';
-import { ANCHORS, anchorPosition, layoutStorageKey, normalizeView, routeOrthogonal, visibleIds } from '../assets/schematic-layout.js';
+import { ANCHORS, anchorPosition, layoutStorageKey, normalizeView, routeOrthogonal, sanitizePositions, visibleIds } from '../assets/schematic-layout.js';
 
 test('old hashes default to guided step 1', () => {
   assert.deepEqual(normalizeView({}), { view: 'guided', step: 1 });
@@ -67,6 +67,19 @@ test('schematic offers accessible guided and full-view controls', () => {
   assert.match(html, /history\.replaceState\(null,'',hash\)/);
 });
 
+test('full view provides an isolated local layout editor controlled by drag handles', () => {
+  const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(html, /id="layout-edit"/);
+  assert.match(html, /id="layout-restore"/);
+  assert.match(html, /function enterLayoutEditor\(\)/);
+  assert.match(html, /function exitLayoutEditor\(\)/);
+  assert.match(html, /function restoreLayout\(\)/);
+  assert.match(html, /function applyLayout\(positions\)/);
+  assert.match(html, /\[data-drag-handle\]/);
+  assert.match(html, /layoutModel\.layoutStorageKey\(cfg\)/);
+  assert.match(html, /localStorage\.removeItem\(layoutModel\.layoutStorageKey\(cfg\)\)/);
+});
+
 test('orthogonal router emits non-zero segments', () => {
   assert.equal(routeOrthogonal({ x: 10, y: 10 }, { x: 80, y: 10 }, 40), 'M10,10 H80');
   assert.equal(routeOrthogonal({ x: 10, y: 10 }, { x: 10, y: 90 }, 40), 'M10,10 V90');
@@ -91,9 +104,32 @@ test('invalid or partial variants normalize to the safe baseline', () => {
   assert.deepEqual(visibleIds(4, {}), baseline);
   assert.deepEqual(visibleIds(4, null), baseline);
   assert.deepEqual(visibleIds(4, { net: 'invalid', power: 'invalid' }), baseline);
-  assert.equal(layoutStorageKey({ tft: true, net: 'lte', power: 'xl4016' }), 'schematic-layout:tft:lte:xl4016');
-  assert.equal(layoutStorageKey({}), 'schematic-layout:plain:wifi:lm2596');
-  assert.equal(layoutStorageKey(null), 'schematic-layout:plain:wifi:lm2596');
+  assert.equal(layoutStorageKey({ tft: true, net: 'lte', power: 'xl4016' }), 'schematic-layout:v1:true:lte:xl4016');
+  assert.equal(layoutStorageKey({}), 'schematic-layout:v1:false:wifi:lm2596');
+  assert.equal(layoutStorageKey(null), 'schematic-layout:v1:false:wifi:lm2596');
+});
+
+test('saved layout is isolated by the electrical variant', () => {
+  assert.notEqual(
+    layoutStorageKey({ tft: false, net: 'lte', power: 'xl4016' }),
+    layoutStorageKey({ tft: false, net: 'lte', power: 'lm2596' }),
+  );
+});
+
+test('invalid saved coordinates fall back to default coordinates', () => {
+  const result = sanitizePositions(
+    { esp32: { x: -4, y: Number.NaN } },
+    { esp32: { x: 520, y: 420 } },
+  );
+  assert.deepEqual(result.esp32, { x: 520, y: 420 });
+});
+
+test('saved coordinates outside the SVG canvas fall back to defaults', () => {
+  const result = sanitizePositions(
+    { esp32: { x: 1561, y: 420 } },
+    { esp32: { x: 520, y: 420 } },
+  );
+  assert.deepEqual(result.esp32, { x: 520, y: 420 });
 });
 
 test('every wire endpoint resolves to a real component-pin anchor', () => {

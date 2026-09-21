@@ -98,7 +98,19 @@ export function routeOrthogonal(from, to, lane) {
 
 export function layoutStorageKey(variant) {
   const selected = normalizedVariant(variant);
-  return `schematic-layout:${selected.tft ? 'tft' : 'plain'}:${selected.net}:${selected.power}`;
+  return `schematic-layout:v1:${selected.tft}:${selected.net}:${selected.power}`;
+}
+
+export function sanitizePositions(saved, defaults = DEFAULT_LAYOUT) {
+  const source = saved && typeof saved === 'object' ? saved : {};
+  return Object.fromEntries(Object.entries(defaults).map(([id, fallback]) => {
+    const position = source[id];
+    const valid = position && typeof position === 'object'
+      && Number.isFinite(position.x) && Number.isFinite(position.y)
+      && position.x >= 0 && position.x <= 1560
+      && position.y >= 0 && position.y <= 1210;
+    return [id, valid ? { ...fallback, x: position.x, y: position.y } : { ...fallback }];
+  }));
 }
 
 export function anchorPosition(name) {

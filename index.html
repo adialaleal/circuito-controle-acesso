@@ -106,7 +106,13 @@
   .guided-stepper button{min-width:29px;padding-inline:7px}
   .zone-label{font-family:var(--mono);font-size:12px;letter-spacing:.14em;fill:var(--amber);font-weight:700}
   .is-stage-hidden{display:none!important}
+  #layout-grid{display:none;pointer-events:none}
+  .layout-editing #layout-grid{display:block}
   .drag-handle{display:none;cursor:grab}
+  .layout-editing .drag-handle{display:block}
+  .drag-handle rect{fill:var(--amber);stroke:#18110a;stroke-width:2;rx:3;pointer-events:all}
+  .drag-handle line{stroke:#18110a;stroke-width:2;pointer-events:none}
+  .drag-handle:active{cursor:grabbing}
   #view3d{display:none}
   #three-wrap{position:relative;height:640px;border-radius:12px;overflow:hidden;background:#0a0d12;border:1px solid var(--line)}
   #three-wrap canvas{display:block}
@@ -381,6 +387,8 @@
         <div class="mode-switch">
           <button id="mode-guided" type="button" aria-pressed="true" disabled>Montagem guiada</button>
           <button id="mode-full" type="button" aria-pressed="false" disabled>Circuito completo</button>
+          <button id="layout-edit" type="button" aria-pressed="false" hidden disabled>Editar layout</button>
+          <button id="layout-restore" type="button" hidden disabled>Restaurar layout</button>
         </div>
         <div class="guided-nav">
           <button id="guided-back" type="button" disabled>Voltar</button>
@@ -497,7 +505,11 @@
           <circle data-anchor="ima3.plus" cx="1340" cy="640" r="0"/>
           <circle data-anchor="ima3.ground" cx="1340" cy="675" r="0"/>
         </g>
+          <pattern id="layout-grid-pattern" width="20" height="20" patternUnits="userSpaceOnUse">
+            <path d="M20 0H0V20" fill="none" stroke="#ffb224" stroke-opacity=".18" stroke-width="1"/>
+          </pattern>
         </defs>
+        <rect id="layout-grid" width="1560" height="1210" fill="url(#layout-grid-pattern)" aria-hidden="true"/>
 
         <g id="zone-labels" aria-hidden="true" hidden>
           <text class="zone-label" x="40" y="34">POTÊNCIA E DISTRIBUIÇÃO</text>
@@ -1525,6 +1537,13 @@ const RELE_HDR=[{n:'GND',net:'gnd',y:380},{n:'IN1',net:'sig1',y:420},{n:'IN2',ne
 const svg=document.getElementById('schematic');
 const insp={box:document.getElementById('inspector'),t:document.getElementById('insp-title'),d:document.getElementById('insp-desc'),l:document.getElementById('insp-list')};
 let pinned=null;
+let editingLayout=false;
+let layoutEditorVariant=null;
+let activeLayout=null;
+let activeLayoutVariant=null;
+let activeLayoutDrag=null;
+const LAYOUT_GRID_SIZE=20;
+const SVG_LAYOUT_BOUNDS=Object.freeze({width:1560,height:1210});
 const GUIDED_COPY=Object.freeze({
   1:{title:'1 · Fonte e distribuição 12V',desc:'Conecte a fonte ao P4 e confirme +12V e GND nos dois Wagos antes de avançar.'},
   2:{title:'2 · Conversão para 5V e rede',desc:'Ajuste o conversor para 5,0V. Com 4G, inclua o modem, a antena e o capacitor conforme a opção escolhida.'},
@@ -1550,23 +1569,144 @@ function setStageHidden(element, hidden){
   element.toggleAttribute('hidden',hidden);
   element.setAttribute('aria-hidden',String(hidden));
 }
-function currentSchematicLayout(){
-  const current={...layoutModel.DEFAULT_LAYOUT};
+function updateLayoutEditorControls(){
+  const available=layoutLoadState==='ready'&&schematicView.view==='full';
+  const edit=document.getElementById('layout-edit');
+  const restore=document.getElementById('layout-restore');
+  edit.hidden=!available;
+  restore.hidden=!available;
+  edit.disabled=!available;
+  restore.disabled=!available;
+  edit.setAttribute('aria-pressed',String(editingLayout));
+  edit.textContent=editingLayout?'Encerrar edição':'Editar layout';
+}
+function renderLayout(layout){
   svg.querySelectorAll('.comp[data-layout-id]').forEach(component=>{
     const baseline=layoutModel.DEFAULT_LAYOUT[component.dataset.layoutId];
-    if(!baseline)return;
-    const explicitX=Number(component.dataset.layoutX);
-    const explicitY=Number(component.dataset.layoutY);
-    if(Number.isFinite(explicitX)&&Number.isFinite(explicitY)){
-      current[component.dataset.layoutId]={...baseline,x:explicitX,y:explicitY};
-      return;
-    }
-    const translation=component.getAttribute('transform')?.match(/translate\(\s*(-?\d+(?:\.\d+)?)?(?:[ ,]+(-?\d+(?:\.\d+)?))?\s*\)/);
-    const x=Number(translation?.[1]||0);
-    const y=Number(translation?.[2]||0);
-    current[component.dataset.layoutId]={...baseline,x:baseline.x+x,y:baseline.y+y};
+    const position=layout[component.dataset.layoutId];
+    if(!baseline||!position)return;
+    component.dataset.layoutX=String(position.x);
+    component.dataset.layoutY=String(position.y);
+    component.setAttribute('transform','translate('+(position.x-baseline.x)+' '+(position.y-baseline.y)+')');
   });
-  return current;
+  svg.querySelectorAll('.wire[data-reroutable]').forEach(wire=>{
+    if(!wire.dataset.originalRoute)wire.dataset.originalRoute=wire.getAttribute('d');
+    const from=layoutModel.anchorPositionForLayout(wire.dataset.from,layout);
+    const to=layoutModel.anchorPositionForLayout(wire.dataset.to,layout);
+    wire.setAttribute('d',layoutModel.routeOrthogonal(from,to,Math.round((from.x+to.x)/2)));
+  });
+  svg.querySelectorAll('.wire-hit[data-wire-id]').forEach(hit=>{
+    const wire=svg.querySelector('.wire[data-wire-id="'+hit.dataset.wireId+'"]');
+    if(wire)hit.setAttribute('d',wire.getAttribute('d'));
+  });
+}
+function applyLayout(positions){
+  if(!layoutModel)return null;
+  activeLayout=layoutModel.sanitizePositions(positions,layoutModel.DEFAULT_LAYOUT);
+  activeLayoutVariant=layoutModel.layoutStorageKey(cfg);
+  if(schematicView.view==='full')renderLayout(activeLayout);
+  return activeLayout;
+}
+function resetLayoutToDefaults(){
+  activeLayout=layoutModel.sanitizePositions(null,layoutModel.DEFAULT_LAYOUT);
+  applyLayout(activeLayout);
+}
+function readSavedLayout(){
+  try{
+    return layoutModel.sanitizePositions(JSON.parse(localStorage.getItem(layoutModel.layoutStorageKey(cfg))||'null'),layoutModel.DEFAULT_LAYOUT);
+  }catch(e){
+    return layoutModel.sanitizePositions(null,layoutModel.DEFAULT_LAYOUT);
+  }
+}
+function ensureDragHandles(){
+  svg.querySelectorAll('[data-drag-handle]').forEach(handle=>{
+    if(handle.dataset.ready==='true')return;
+    const component=handle.closest('.comp[data-layout-id]');
+    if(!component)return;
+    const bounds=component.getBBox();
+    const ns='http://www.w3.org/2000/svg';
+    const rect=document.createElementNS(ns,'rect');
+    rect.setAttribute('x',String(Math.max(0,bounds.x-26)));
+    rect.setAttribute('y',String(Math.max(0,bounds.y-26)));
+    rect.setAttribute('width','22');
+    rect.setAttribute('height','22');
+    const horizontal=document.createElementNS(ns,'line');
+    horizontal.setAttribute('x1',String(Math.max(0,bounds.x-21)));
+    horizontal.setAttribute('x2',String(Math.max(0,bounds.x-9)));
+    horizontal.setAttribute('y1',String(Math.max(0,bounds.y-15)));
+    horizontal.setAttribute('y2',String(Math.max(0,bounds.y-15)));
+    const vertical=document.createElementNS(ns,'line');
+    vertical.setAttribute('x1',String(Math.max(0,bounds.x-15)));
+    vertical.setAttribute('x2',String(Math.max(0,bounds.x-15)));
+    vertical.setAttribute('y1',String(Math.max(0,bounds.y-21)));
+    vertical.setAttribute('y2',String(Math.max(0,bounds.y-9)));
+    handle.append(rect,horizontal,vertical);
+    handle.dataset.ready='true';
+    handle.addEventListener('pointerdown',startLayoutDrag);
+    handle.addEventListener('pointermove',moveLayoutDrag);
+    handle.addEventListener('pointerup',finishLayoutDrag);
+    handle.addEventListener('pointercancel',finishLayoutDrag);
+  });
+}
+function svgPoint(event){
+  const matrix=svg.getScreenCTM();
+  if(!matrix)return null;
+  const point=svg.createSVGPoint();
+  point.x=event.clientX;
+  point.y=event.clientY;
+  return point.matrixTransform(matrix.inverse());
+}
+function clampLayoutPosition(value, maximum){
+  return Math.min(maximum,Math.max(0,Math.round(value/LAYOUT_GRID_SIZE)*LAYOUT_GRID_SIZE));
+}
+function startLayoutDrag(event){
+  if(!editingLayout||schematicView.view!=='full')return;
+  const handle=event.currentTarget;
+  const component=handle.closest('.comp[data-layout-id]');
+  const id=component?.dataset.layoutId;
+  const point=svgPoint(event);
+  const position=activeLayout?.[id];
+  if(!id||!point||!position)return;
+  activeLayoutDrag={handle,id,pointerId:event.pointerId,offsetX:point.x-position.x,offsetY:point.y-position.y};
+  handle.setPointerCapture(event.pointerId);
+  event.preventDefault();
+  event.stopPropagation();
+}
+function moveLayoutDrag(event){
+  if(!activeLayoutDrag||event.pointerId!==activeLayoutDrag.pointerId)return;
+  const point=svgPoint(event);
+  if(!point)return;
+  const {id,offsetX,offsetY}=activeLayoutDrag;
+  applyLayout({...activeLayout,[id]:{...activeLayout[id],x:clampLayoutPosition(point.x-offsetX,SVG_LAYOUT_BOUNDS.width),y:clampLayoutPosition(point.y-offsetY,SVG_LAYOUT_BOUNDS.height)}});
+}
+function finishLayoutDrag(event){
+  if(!activeLayoutDrag||event.pointerId!==activeLayoutDrag.pointerId)return;
+  const {handle}=activeLayoutDrag;
+  if(handle.hasPointerCapture(event.pointerId))handle.releasePointerCapture(event.pointerId);
+  activeLayoutDrag=null;
+  try{localStorage.setItem(layoutModel.layoutStorageKey(cfg),JSON.stringify(activeLayout));}catch(e){}
+}
+function enterLayoutEditor(){
+  if(layoutLoadState!=='ready'||schematicView.view!=='full')return false;
+  layoutEditorVariant=layoutModel.layoutStorageKey(cfg);
+  editingLayout=true;
+  applyLayout(readSavedLayout());
+  ensureDragHandles();
+  svg.classList.add('layout-editing');
+  updateLayoutEditorControls();
+  return true;
+}
+function exitLayoutEditor(){
+  editingLayout=false;
+  layoutEditorVariant=null;
+  activeLayoutDrag=null;
+  svg.classList.remove('layout-editing');
+  updateLayoutEditorControls();
+}
+function restoreLayout(){
+  if(layoutLoadState!=='ready'||schematicView.view!=='full')return;
+  try{localStorage.removeItem(layoutModel.layoutStorageKey(cfg));}catch(e){}
+  resetLayoutToDefaults();
 }
 function writeSchematicHash(){
   const hash='#tft='+(cfg.tft?1:0)+'&net='+cfg.net+'&ap='+(cfg.ap?1:0)+'&power='+cfg.power+'&view='+schematicView.view+'&step='+schematicView.step;
@@ -1594,24 +1734,24 @@ function applySchematicView(){
     setStageHidden(element,guided&&Number(element.dataset.stage)>schematicView.step);
   });
 
-  const currentLayout=guided?null:currentSchematicLayout();
-  svg.querySelectorAll('.comp[data-layout-id]').forEach(component=>{
-    const baseline=layoutModel.DEFAULT_LAYOUT[component.dataset.layoutId];
-    if(!baseline||guided){component.removeAttribute('transform');return;}
-    const position=currentLayout[component.dataset.layoutId];
-    component.setAttribute('transform','translate('+(position.x-baseline.x)+' '+(position.y-baseline.y)+')');
-  });
-  svg.querySelectorAll('.wire[data-reroutable]').forEach(wire=>{
-    if(!wire.dataset.originalRoute)wire.dataset.originalRoute=wire.getAttribute('d');
-    if(guided){wire.setAttribute('d',wire.dataset.originalRoute);return;}
-    const from=layoutModel.anchorPositionForLayout(wire.dataset.from,currentLayout);
-    const to=layoutModel.anchorPositionForLayout(wire.dataset.to,currentLayout);
-    wire.setAttribute('d',layoutModel.routeOrthogonal(from,to,Math.round((from.x+to.x)/2)));
-  });
-  svg.querySelectorAll('.wire-hit[data-wire-id]').forEach(hit=>{
-    const wire=svg.querySelector('.wire[data-wire-id="'+hit.dataset.wireId+'"]');
-    if(wire)hit.setAttribute('d',wire.getAttribute('d'));
-  });
+  if(guided){
+    svg.querySelectorAll('.comp[data-layout-id]').forEach(component=>{
+      component.removeAttribute('transform');
+      delete component.dataset.layoutX;
+      delete component.dataset.layoutY;
+    });
+    svg.querySelectorAll('.wire[data-reroutable]').forEach(wire=>{
+      if(!wire.dataset.originalRoute)wire.dataset.originalRoute=wire.getAttribute('d');
+      wire.setAttribute('d',wire.dataset.originalRoute);
+    });
+    svg.querySelectorAll('.wire-hit[data-wire-id]').forEach(hit=>{
+      const wire=svg.querySelector('.wire[data-wire-id="'+hit.dataset.wireId+'"]');
+      if(wire)hit.setAttribute('d',wire.getAttribute('d'));
+    });
+  }else{
+    const currentVariant=layoutModel.layoutStorageKey(cfg);
+    applyLayout(activeLayout&&activeLayoutVariant===currentVariant?activeLayout:readSavedLayout());
+  }
 
   document.getElementById('mode-guided').setAttribute('aria-pressed',String(guided));
   document.getElementById('mode-full').setAttribute('aria-pressed',String(!guided));
@@ -1623,20 +1763,28 @@ function applySchematicView(){
   });
   document.getElementById('guided-back').disabled=!guided||schematicView.step===1;
   document.getElementById('guided-next').disabled=!guided||schematicView.step===4;
+  updateLayoutEditorControls();
   setPinned(null);
   resetInspector();
   insp.t.textContent=copy.title;
   insp.d.textContent=copy.desc;
 }
 function setSchematicView(view, step){
+  if(view!=='full'&&editingLayout)exitLayoutEditor();
   schematicView=normalizeSchematicView({view,step});
   applySchematicView();
   writeSchematicHash();
 }
 window.applySchematicView=applySchematicView;
 window.setSchematicView=setSchematicView;
+window.enterLayoutEditor=enterLayoutEditor;
+window.exitLayoutEditor=exitLayoutEditor;
+window.restoreLayout=restoreLayout;
+window.applyLayout=applyLayout;
 document.getElementById('mode-guided').addEventListener('click',()=>setSchematicView('guided',schematicView.step));
 document.getElementById('mode-full').addEventListener('click',()=>setSchematicView('full',schematicView.step));
+document.getElementById('layout-edit').addEventListener('click',()=>{if(editingLayout)exitLayoutEditor();else enterLayoutEditor();});
+document.getElementById('layout-restore').addEventListener('click',restoreLayout);
 document.getElementById('guided-back').addEventListener('click',()=>setSchematicView('guided',schematicView.step-1));
 document.getElementById('guided-next').addEventListener('click',()=>setSchematicView('guided',schematicView.step+1));
 document.querySelectorAll('#guided-stepper button').forEach(button=>button.addEventListener('click',()=>setSchematicView('guided',button.dataset.step)));
@@ -1939,6 +2087,10 @@ const NETLABELS={
 };
 function applyConfig(){
   if(cfg.net!=='lte')cfg.ap=false;
+  if(editingLayout&&layoutModel&&layoutEditorVariant!==layoutModel.layoutStorageKey(cfg)){
+    exitLayoutEditor();
+    resetLayoutToDefaults();
+  }
   OPTS.forEach(o=>document.body.classList.toggle('no-'+o,!optOn(o)));
   document.querySelectorAll('.seg').forEach(seg=>{
     const k=seg.dataset.key;

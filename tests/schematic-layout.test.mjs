@@ -125,6 +125,8 @@ test('XL4016 outputs connect directly to the two Wagos and the canvas is full wi
   const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   assert.match(html, /data-wire-id="wire-34"[\s\S]*d="M100,430 V440"/);
   assert.match(html, /data-wire-id="wire-37"[\s\S]*d="M160,430 V480"/);
+  assert.match(html, /<circle class="terminal-dot" data-terminal-anchor="borne5xl\.plus"[^>]*cx="100" cy="440"/);
+  assert.match(html, /<circle class="terminal-dot" data-terminal-anchor="borne5xl\.ground"[^>]*cx="160" cy="480"/);
   assert.match(html, /\.schematic-layout\{display:block/);
   assert.match(html, /\.schematic-inspector-strip\{display:grid/);
   assert.match(html, /@media\(max-width:700px\)\{[\s\S]*?\.schematic-inspector-strip\{grid-template-columns:1fr/);

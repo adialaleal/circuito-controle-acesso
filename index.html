@@ -268,10 +268,11 @@
   .cfg .hint b{color:var(--amber);font-weight:600}
 
   /* elementos opcionais — escondidos conforme a configuração (classes no <body>) */
-  .no-tft [data-opt="tft"],.no-notft [data-opt="notft"],
-  .no-lte [data-opt="lte"],.no-nolte [data-opt="nolte"],
-  .no-wifi [data-opt="wifi"],.no-dual [data-opt="dual"],.no-lteonly [data-opt="lteonly"],
-  .no-ap [data-opt="ap"],.no-noap [data-opt="noap"],.no-radio [data-opt="radio"]{display:none!important}
+  .no-tft [data-opt~="tft"],.no-notft [data-opt~="notft"],
+  .no-lte [data-opt~="lte"],.no-nolte [data-opt~="nolte"],
+  .no-wifi [data-opt~="wifi"],.no-dual [data-opt~="dual"],.no-lteonly [data-opt~="lteonly"],
+  .no-ap [data-opt~="ap"],.no-noap [data-opt~="noap"],.no-radio [data-opt~="radio"],
+  .no-xl [data-opt~="xl"],.no-lmpower [data-opt~="lmpower"],.no-lmdual [data-opt~="lmdual"]{display:none!important}
 
   /* ficha da configuração (aside) */
   .cfgcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
@@ -334,6 +335,11 @@
     <div class="grp"><span class="lbl">Hotspot da ESP32</span>
       <div class="seg" data-key="ap">
         <button data-val="0">desligado</button><button data-val="1">ligado</button>
+      </div>
+    </div>
+    <div class="grp"><span class="lbl">Alimentação 4G</span>
+      <div class="seg" data-key="power">
+        <button data-val="lm2596">2× LM2596</button><button data-val="xl4016">XL4016 único (≥5A real)</button>
       </div>
     </div>
     <p class="hint" id="cfg-hint"></p>
@@ -402,12 +408,21 @@
           <path class="wire" data-opt="tft" data-net="3v3"  stroke="var(--w33)"   d="M780,770 V1138 H513"/>
 
           <!-- modem 4G A7672SA (opcional): LM2596 #2 → capacitor → modem → UART1 do ESP32 -->
-          <path class="wire" data-opt="lte" data-net="12v" stroke="var(--w12)"  d="M340,210 V250"/>
-          <path class="wire" data-opt="lte" data-net="gnd" stroke="var(--wgnd)" d="M400,230 V250"/>
-          <path class="wire" data-opt="lte" data-net="5vm" stroke="var(--w5m)"  d="M340,380 V470"/>
-          <path class="wire" data-opt="lte" data-net="gnd" stroke="var(--wgnd)" d="M400,380 V470"/>
-          <path class="wire" data-opt="lte" data-net="5vm" stroke="var(--w5m)"  d="M340,420 H356"/>
-          <path class="wire" data-opt="lte" data-net="gnd" stroke="var(--wgnd)" d="M384,420 H400"/>
+          <path class="wire" data-opt="lte lmdual" data-net="12v" stroke="var(--w12)"  d="M340,210 V250"/>
+          <path class="wire" data-opt="lte lmdual" data-net="gnd" stroke="var(--wgnd)" d="M400,230 V250"/>
+          <path class="wire" data-opt="lte lmdual" data-net="5vm" stroke="var(--w5m)"  d="M340,380 V470"/>
+          <path class="wire" data-opt="lte lmdual" data-net="gnd" stroke="var(--wgnd)" d="M400,380 V470"/>
+          <path class="wire" data-opt="lte lmdual" data-net="5vm" stroke="var(--w5m)"  d="M340,420 H356"/>
+          <path class="wire" data-opt="lte lmdual" data-net="gnd" stroke="var(--wgnd)" d="M384,420 H400"/>
+          <!-- XL4016 único: o mesmo trilho de 5V alimenta ESP32, relé e modem -->
+          <path class="wire" data-opt="xl" data-net="5v" stroke="var(--w5)" d="M100,430 V440"/>
+          <path class="wire" data-opt="xl" data-net="5v" stroke="var(--w5)" d="M190,455 H520 V770 H548"/>
+          <path class="wire" data-opt="xl" data-net="5v" stroke="var(--w5)" d="M190,455 H340 V470"/>
+          <path class="wire" data-opt="xl" data-net="gnd" stroke="var(--wgnd)" d="M160,430 V480"/>
+          <path class="wire" data-opt="xl" data-net="gnd" stroke="var(--wgnd)" d="M190,495 H500 V740 H548"/>
+          <path class="wire" data-opt="xl" data-net="gnd" stroke="var(--wgnd)" d="M190,495 H400 V470"/>
+          <path class="wire" data-opt="xl" data-net="5v" stroke="var(--w5)" d="M340,420 H356"/>
+          <path class="wire" data-opt="xl" data-net="gnd" stroke="var(--wgnd)" d="M384,420 H400"/>
           <path class="wire" data-opt="lte" data-net="lte" stroke="var(--wlte)" d="M475,530 H544"/>
           <path class="wire" data-opt="lte" data-net="lte" stroke="var(--wlte)" d="M475,560 H544"/>
           <path class="wire" data-opt="lte" data-net="lte" stroke="var(--wlte)" d="M475,590 H544"/>
@@ -445,13 +460,13 @@
         <g fill="var(--muted)">
           <text class="netlabel" x="900" y="28" fill="var(--w12)">barramento +12V</text>
           <text class="netlabel" x="900" y="952" fill="var(--wgnd)">barramento GND (0V)</text>
-          <text class="netlabel" x="300" y="852" fill="var(--w5)">+5V (saída do LM2596)</text>
+          <text class="netlabel" x="300" y="852" fill="var(--w5)">+5V (saída do step-down)</text>
           <text class="netlabel" x="806" y="372" fill="var(--ws1)">GPIO22→IN1</text>
           <text class="netlabel" x="852" y="446" fill="var(--ws2)">GPIO21→IN2</text>
           <text class="netlabel" x="866" y="612" fill="var(--ws3)">GPIO16→IN3</text>
           <text class="netlabel" data-opt="tft" x="840" y="990" fill="var(--wdisp)">SPI do display · 5 fios</text>
           <text class="netlabel" data-opt="lte" x="483" y="522" fill="var(--wlte)">UART1 · 3,3V</text>
-          <text class="netlabel" data-opt="lte" x="348" y="398" fill="var(--w5m)">+5V só do modem</text>
+          <text class="netlabel" data-opt="lte" x="348" y="398" fill="var(--w5m)">+5V do modem</text>
         </g>
 
         <!-- ================= STATUS DE REDE (acima da antena do ESP32) ================= -->
@@ -533,7 +548,7 @@
         </g>
 
         <!-- ================= LM2596 ================= -->
-        <g class="comp" data-id="lm2596">
+        <g class="comp" data-id="lm2596" data-opt="lmpower">
           <rect class="halo" x="40" y="290" width="220" height="150" rx="10"/>
           <rect class="board-blu" x="50" y="300" width="200" height="130" rx="7"/>
           <circle class="screw" cx="100" cy="314" r="7"/><line x1="100" y1="300" x2="100" y2="307" stroke="#c9a227" stroke-width="3"/>
@@ -566,7 +581,7 @@
         </g>
 
         <!-- ================= LM2596 #2 · SÓ DO MODEM (opcional) ================= -->
-        <g class="comp" data-id="lm2596b" data-opt="lte">
+        <g class="comp" data-id="lm2596b" data-opt="lte lmdual">
           <rect class="halo" x="290" y="240" width="200" height="150" rx="10"/>
           <rect class="board-blu" x="300" y="250" width="180" height="130" rx="7"/>
           <circle class="screw" cx="340" cy="264" r="7"/><line x1="340" y1="250" x2="340" y2="257" stroke="#c9a227" stroke-width="3"/>
@@ -592,6 +607,36 @@
           <line x1="459.5" y1="258.5" x2="466.5" y2="265.5" stroke="#7c5f10" stroke-width="1.5"/>
           <text class="silk" x="306" y="340" font-size="9">LM2596 #2 · só p/ o modem</text>
           <text x="404" y="246" font-size="8.5" fill="var(--amber)" font-family="var(--mono)">⚠ ajustar p/ 5,0V</text>
+        </g>
+
+        <!-- ================= XL4016 · ÚNICO PARA ESP32, RELÉ E MODEM ================= -->
+        <g class="comp" data-id="xl4016" data-opt="xl">
+          <rect class="halo" x="40" y="280" width="450" height="160" rx="10"/>
+          <rect class="board-blu" x="50" y="290" width="430" height="140" rx="7"/>
+          <circle class="screw" cx="100" cy="304" r="7"/><circle class="screw" cx="160" cy="304" r="7"/>
+          <circle class="screw" cx="100" cy="416" r="7"/><circle class="screw" cx="160" cy="416" r="7"/>
+          <text class="silk" x="82" y="330" font-size="9">IN+</text><text class="silk" x="144" y="330" font-size="9">IN−</text>
+          <text class="silk" x="78" y="404" font-size="9">OUT+</text><text class="silk" x="142" y="404" font-size="9">OUT−</text>
+          <rect x="205" y="312" width="100" height="62" rx="4" fill="#11151b" stroke="#586473"/>
+          <text x="218" y="342" font-size="18" font-weight="700" fill="#e8edf3" font-family="var(--mono)">XL4016</text>
+          <text x="218" y="360" font-size="8" fill="#aeb9c6" font-family="var(--mono)">STEP-DOWN · prefira ≥5A contínuos reais</text>
+          <circle cx="356" cy="350" r="35" fill="url(#gToro)" stroke="#5e441a" stroke-width="2"/>
+          <circle cx="356" cy="350" r="12" fill="#141313" stroke="#5e441a"/>
+          <rect x="414" y="306" width="42" height="20" rx="3" fill="#2a6fdb" stroke="#6ea1f0"/>
+          <circle cx="435" cy="316" r="6" fill="#c9a227" stroke="#8a6d12"/>
+          <text class="silk" x="214" y="396" font-size="10">XL4016 único · 12V→5V · ESP32 + relé + modem</text>
+          <text x="306" y="280" font-size="9" fill="var(--amber)" font-family="var(--mono)">⚠ ajustar p/ 5,0V antes de ligar as cargas</text>
+        </g>
+
+        <!-- Wagos de saída: deixam explícita a divisão do único par 5V/GND do XL4016 -->
+        <g class="comp" data-id="borne5xl" data-opt="xl">
+          <rect class="halo" x="42" y="436" width="156" height="78" rx="8"/>
+          <rect x="50" y="440" width="140" height="30" rx="5" fill="url(#gWago)" stroke="#9aa4af" stroke-width="1.1"/>
+          <rect x="55" y="444" width="22" height="12" rx="2" fill="#ff7a1a"/><rect x="82" y="444" width="22" height="12" rx="2" fill="#ff7a1a"/><rect x="109" y="444" width="22" height="12" rx="2" fill="#ff7a1a"/><rect x="136" y="444" width="22" height="12" rx="2" fill="#ff7a1a"/>
+          <text x="60" y="466" font-size="8" fill="#a34d16" font-family="var(--mono)" font-weight="700">WAGO · +5V</text>
+          <rect x="50" y="480" width="140" height="30" rx="5" fill="url(#gWago)" stroke="#9aa4af" stroke-width="1.1"/>
+          <rect x="55" y="484" width="22" height="12" rx="2" fill="#ff7a1a"/><rect x="82" y="484" width="22" height="12" rx="2" fill="#ff7a1a"/><rect x="109" y="484" width="22" height="12" rx="2" fill="#ff7a1a"/><rect x="136" y="484" width="22" height="12" rx="2" fill="#ff7a1a"/>
+          <text x="60" y="506" font-size="8" fill="#3d4650" font-family="var(--mono)" font-weight="700">WAGO · GND</text>
         </g>
 
         <!-- ================= CAPACITOR 1000µF · VIN DO MODEM (opcional) ================= -->
@@ -982,7 +1027,9 @@
   o usual é 60&nbsp;kgf ou mais.<span data-opt="tft"> A tela TFT soma uns <b>100&nbsp;mA</b> em 5V — entra na folga da conta.</span>
   <span data-opt="lte">O modem 4G muda a conta: em repouso são ~80&nbsp;mA, mas no registro na rede e em cada
   transmissão o A7672SA puxa <b>rajadas de até 2&nbsp;A em 5V</b> (≈1&nbsp;A referido a 12V). Daí a fonte de
-  <b>12V/5A</b>, o LM2596 #2 exclusivo e o capacitor de 1000µF colado no VIN do módulo.</span></p>
+  <b>12V/5A</b> e o capacitor de 1000µF colado no VIN do módulo. Com <b>XL4016 único</b>, escolha módulo de
+  boa procedência, com <b>ao menos 5A contínuos reais</b> e ventilação; a inscrição “8A” de módulos genéricos
+  não substitui margem térmica.</span></p>
 
   <h3 data-opt="tft" data-t="A tela de status (TFT 4&quot; SPI)">7 · A tela de status (TFT 4" SPI)</h3>
   <p data-opt="tft">Embutida no <b>canto superior direito da porta branca</b> (o compartimento de equipamentos), a tela
@@ -1009,9 +1056,12 @@
   para ligar) e <code>GPIO33</code> → RST. O firmware usa a pilha <b>PPP</b> do core arduino-esp32 3.x (perfil
   SIM7600, compatível em AT com o A7672SA): o modem vira uma interface de rede da ESP32 e o mesmo
   <code>PubSubClient</code> continua falando com o broker — os tópicos <code>portas/N/abrir</code> não mudam.</p>
-  <p data-opt="lte"><b>Alimentação:</b> rajadas de até 2&nbsp;A em 5&nbsp;V. Por isso a fonte de <b>12V/5A</b>, o
-  <b>LM2596 #2</b> só do modem (ajustado em 5,0V com multímetro, como o primeiro) e o <b>capacitor de 1000µF</b>
-  colado no VIN — GND comum a tudo. <b>Lógica:</b> o chip nu fala UART em 1,8&nbsp;V; compre o breakout com
+  <p data-opt="lte"><b>Alimentação:</b> rajadas de até 2&nbsp;A em 5&nbsp;V. A configuração recomendada é o
+  <b>XL4016 único</b>, regulado em 5,0V e com capacidade de <b>≥5A contínuos reais</b>, alimentando ESP32,
+  JD-VCC do relé e modem pelo mesmo par de Wagos. O <b>capacitor low-ESR de 1000µF/16V</b>, com um cerâmico
+  de <b>100nF</b> em paralelo, fica colado no VIN/GND do modem; use fios curtos e mais grossos nesse trecho.
+  O modo <b>2× LM2596</b> permanece como alternativa, com o segundo dedicado ao modem. GND é comum a tudo.
+  <b>Lógica:</b> o chip nu fala UART em 1,8&nbsp;V; compre o breakout com
   conversor de nível para 3,3&nbsp;V. <b>Antena:</b> FPC adesiva 4G no cabo IPEX, colada no lado de dentro do
   painel de fundo, longe da fonte e dos ímãs; se o sinal dentro do móvel ficar abaixo de −100&nbsp;dBm, leve a
   antena para fora com um pigtail IPEX→SMA. <b>Chip:</b> SIM de dados (plano M2M/IoT ou pré-pago) com o APN
@@ -1106,9 +1156,10 @@
 /* ============================================================
    CONFIGURAÇÃO DA MONTAGEM — estado global
    tft: tela TFT 4" presente · net: wifi | dual | lte · ap: hotspot da ESP32
+   power: lm2596 | xl4016 (somente quando há modem)
 ============================================================ */
 const CFG_KEY='cfg-montagem';
-const cfg={tft:true,net:'wifi',ap:false};
+const cfg={tft:true,net:'wifi',ap:false,power:'xl4016'};
 function readCfg(){
   let src=null;
   const h=location.hash.replace(/^#/,'');
@@ -1118,6 +1169,7 @@ function readCfg(){
   if(src.tft!==undefined)cfg.tft=(src.tft==='1'||src.tft===true||src.tft===1);
   if(['wifi','dual','lte'].includes(src.net))cfg.net=src.net;
   if(src.ap!==undefined)cfg.ap=(src.ap==='1'||src.ap===true||src.ap===1);
+  if(['lm2596','xl4016'].includes(src.power))cfg.power=src.power;
   if(cfg.net!=='lte')cfg.ap=false;
   if(src.tab==='3d')selectTab('b'); else if(src.tab==='lista')selectTab('c');
 }
@@ -1129,10 +1181,14 @@ function optOn(o){
     case 'lteonly':return cfg.net==='lte';
     case 'ap':return cfg.ap;              case 'noap':return !cfg.ap;
     case 'radio':return cfg.net!=='lte'||cfg.ap;
+    case 'xl':return cfg.net!=='wifi'&&cfg.power==='xl4016';
+    case 'lmpower':return !(cfg.net!=='wifi'&&cfg.power==='xl4016');
+    case 'lmdual':return cfg.net==='wifi'||cfg.power!=='xl4016';
     default:return true;
   }
 }
-const OPTS=['tft','notft','lte','nolte','wifi','dual','lteonly','ap','noap','radio'];
+const optEnabled=o=>!o||o.split(' ').every(optOn);
+const OPTS=['tft','notft','lte','nolte','wifi','dual','lteonly','ap','noap','radio','xl','lmpower','lmdual'];
 const txt=v=>typeof v==='function'?v():v;
 const NET_NAME={wifi:'Wi-Fi da casa',dual:'Wi-Fi da casa + 4G de reserva',lte:'só 4G (A7672SA)'};
 
@@ -1140,9 +1196,9 @@ const NET_NAME={wifi:'Wi-Fi da casa',dual:'Wi-Fi da casa + 4G de reserva',lte:'s
    DADOS — componentes, redes e pinagem
 ============================================================ */
 const NETS = {
-  '12v' : {name:'+12V (potência)',        color:'var(--w12)',  hex:0xff5c5c, desc:()=>'Sai da fonte, energiza o LM2596'+(optOn('lte')?' (os dois)':'')+' e os contatos COM dos canais 1–3 do relé. É a corrente que segura os ímãs.'},
+  '12v' : {name:'+12V (potência)',        color:'var(--w12)',  hex:0xff5c5c, desc:()=>'Sai da fonte, energiza '+(optOn('xl')?'o XL4016 único':(optOn('lte')?'os dois LM2596':'o LM2596'))+' e os contatos COM dos canais 1–3 do relé. É a corrente que segura os ímãs.'},
   'gnd' : {name:'GND · 0V comum',         color:'var(--wgnd)', hex:0x93a0b1, desc:()=>'Retorno único de todo o sistema: fonte, LM2596, ESP32, módulo relé'+(optOn('lte')?', modem 4G':'')+' e os três eletroímãs compartilham o mesmo 0V.'},
-  '5v'  : {name:'+5V (saída do LM2596)',  color:'var(--w5)',   hex:0xffa94d, desc:()=>'Ajustada no trimpot para 5,0V. Alimenta o VIN do ESP32 e o JD-VCC do relé (bobinas de 5V)'+(cfg.tft?' e o VCC do display':'')+'.'},
+  '5v'  : {name:()=>'+5V (saída do '+(optOn('xl')?'XL4016':'LM2596')+')', color:'var(--w5)', hex:0xffa94d, desc:()=>'Ajustada no trimpot para 5,0V. Alimenta o VIN do ESP32 e o JD-VCC do relé (bobinas de 5V)'+(cfg.tft?' e o VCC do display':'')+(optOn('xl')?' e o modem 4G':'')+'.'},
   '3v3' : {name:'3V3 (lógica)',           color:'var(--w33)',  hex:0xc084fc, desc:()=>'Do regulador interno do ESP32 para o VCC do módulo relé (lado dos optoacopladores)'+(cfg.tft?' e o LED/backlight do display':'')+'.'},
   'sig1': {name:'Sinal · Porta 1',        color:'var(--ws1)',  hex:0xffd43b, desc:'GPIO22 → IN1. Ativo em nível BAIXO: 0V liga a bobina do canal 1 e destrava a porta por ~3s.'},
   'sig2': {name:'Sinal · Porta 2',        color:'var(--ws2)',  hex:0x69db7c, desc:'GPIO21 → IN2. Ativo em nível BAIXO: 0V liga a bobina do canal 2.'},
@@ -1170,15 +1226,21 @@ const COMPS = {
   bornegnd:{name:'Borne / Wago · barramento GND', nets:['gnd'],
     desc:'Ponto único do retorno (0V). Todos os negativos do sistema se encontram aqui.',
     conns:['← P4 fêmea (−)','→ LM2596 · IN−',{t:'→ LM2596 #2 (modem) · IN−',opt:'lte'},'→ Eletroímã 1 (−)','→ Eletroímã 2 (−)','→ Eletroímã 3 (−)',{t:'→ Display · GND',opt:'tft'}]},
-  lm2596:  {name:'Conversor step-down LM2596', nets:['12v','gnd','5v'],
+  lm2596:  {opt:'lmpower', name:'Conversor step-down LM2596', nets:['12v','gnd','5v'],
     desc:'Abaixa os 12V da fonte para 5,0V. Ajuste o trimpot azul COM MULTÍMETRO antes de conectar o ESP32.',
     conns:['<b>IN+</b> ← borne +12V','<b>IN−</b> ← borne GND','<b>OUT+ (5,0V)</b> → ESP32 · VIN &nbsp;e&nbsp; Relé · JD-VCC',{t:'<b>OUT+ (5,0V)</b> → Display · VCC',opt:'tft'},'<b>OUT−</b> → ESP32 · GND']},
-  lm2596b: {opt:'lte', name:'Conversor step-down LM2596 #2 (só do modem)', nets:['12v','gnd','5vm'],
+  lm2596b: {opt:'lte lmdual', name:'Conversor step-down LM2596 #2 (só do modem)', nets:['12v','gnd','5vm'],
     desc:'Segundo conversor, ajustado em 5,0V e dedicado ao A7672SA. Isola as rajadas de 2A do modem do trilho que alimenta o ESP32 e os relés — sem ele, cada transmissão do 4G derruba a tensão do ESP32.',
     conns:['<b>IN+</b> ← barramento +12V','<b>IN−</b> ← barramento GND','<b>OUT+ (5,0V)</b> → Modem · VIN (com 1000µF)','<b>OUT−</b> → Modem · GND','Ajuste com multímetro antes de ligar o modem.']},
-  cap:     {opt:'lte', name:'Capacitor 1000µF / 16V (VIN do modem)', nets:['5vm','gnd'],
-    desc:'Eletrolítico logo na entrada do modem. Segura a tensão nas rajadas de transmissão do LTE; sem ele o A7672SA reinicia sozinho no meio do registro na rede.',
-    conns:['<b>(+)</b> no VIN do modem (5V)','<b>(−)</b> no GND','Faixa clara = terminal negativo · o mais perto possível do módulo.']},
+  xl4016: {opt:'xl', name:'Conversor step-down XL4016 único (5A contínuos mínimos)', nets:['12v','gnd','5v'],
+    desc:'Conversor único, ajustado em 5,0V, para ESP32, bobinas do relé e A7672SA. Use um módulo de boa procedência que entregue ao menos 5A contínuos reais, com ventilação. O capacitor low-ESR de 1000µF e um cerâmico de 100nF ficam colados ao modem para absorver as rajadas de LTE.',
+    conns:['<b>IN+</b> ← barramento +12V','<b>IN−</b> ← barramento GND','<b>OUT+ (5,0V)</b> → ESP32 · VIN, Relé · JD-VCC e Modem · VIN','<b>OUT−</b> → GND comum','Ajuste com multímetro antes de ligar qualquer carga; use fios curtos e grossos até o modem e mantenha ventilação livre.']},
+  borne5xl:{opt:'xl', name:'Wagos de distribuição · +5V e GND', nets:['5v','gnd'],
+    desc:'Os dois Wagos recebem o único par de saída do XL4016 e dividem +5V e GND para ESP32, relé e modem.',
+    conns:['<b>Wago +5V</b> ← XL4016 OUT+ → ESP32 VIN, Relé JD-VCC e Modem VIN','<b>Wago GND</b> ← XL4016 OUT− → ESP32 GND, Relé GND e Modem GND','Use conectores de 4 ou 5 vias e mantenha o capacitor de 1000µF junto ao modem.']},
+  cap:     {opt:'lte', name:'Capacitores do VIN do modem: 1000µF / 16V + 100nF', nets:['5vm','gnd'],
+    desc:'Eletrolítico low-ESR de 1000µF em paralelo com cerâmico de 100nF, logo na entrada do modem. Seguram a tensão nas rajadas de transmissão do LTE; sem desacoplamento próximo o A7672SA pode reiniciar no registro na rede.',
+    conns:['<b>(+)</b> no VIN do modem (5V)','<b>(−)</b> no GND','Faixa clara = terminal negativo; os dois capacitores ficam o mais perto possível do módulo.']},
   modem:   {opt:'lte', name:'Modem 4G LTE Cat.1 · SIMCom A7672SA', nets:['5vm','gnd','lte'],
     desc:()=>'Coloca a ESP32 na internet pela rede celular. Conversa com a ESP32 pela UART1 (comandos AT e depois PPP). Precisa de chip SIM de dados, antena e fonte própria de 5V/2A.'+(cfg.net==='dual'?' Nesta montagem fica desligado até o Wi-Fi da casa cair.':'')+(cfg.ap?' No modo hotspot, é por ele que sai o tráfego dos aparelhos conectados ao Wi-Fi da ESP32.':''),
     conns:['<b>VIN</b> ← LM2596 #2 · OUT+ (5,0V)','<b>GND</b> ← LM2596 #2 · OUT− (comum com o ESP32)','<b>RXD</b> ← GPIO27 · <b>TXD</b> → GPIO26 (115200 8N1, 3,3V)','<b>PWRKEY</b> ← GPIO25 (pulso ~1s) · <b>RST</b> ← GPIO33','<b>ANT (IPEX)</b> → antena LTE · <b>SIM</b> nano, contatos para baixo','Compre o breakout com conversor de nível 3,3V — o chip nu é 1,8V.']},
@@ -1233,7 +1295,7 @@ const ESP_RIGHT=[{n:'D23',net:'disp',opt:'tft'},{n:'D22',net:'sig1'},{n:'TX0'},{
 function drawEspPins(){
   const g=document.getElementById('esp-pins');
   g.innerHTML='';
-  const useNet=p=>(p.net&&optOn(p.opt||''))?p.net:null;
+  const useNet=p=>(p.net&&optEnabled(p.opt))?p.net:null;
   ESP_LEFT.forEach((p,i)=>{
     const y=350+i*30, net=useNet(p);
     el('line',{x1:552,y1:y,x2:560,y2:y,stroke:'#8a6d12','stroke-width':2},g);
@@ -1314,11 +1376,11 @@ function activateNet(net){
   if(row)row.classList.add('hot');
 }
 function showComp(id){
-  const c=COMPS[id]; if(!c||!optOn(c.opt))return;
+  const c=COMPS[id]; if(!c||!optEnabled(c.opt))return;
   clearActive();
   insp.t.textContent=c.num+' · '+txt(c.name);
   insp.d.innerHTML=txt(c.desc);
-  const conns=txt(c.conns).filter(x=>typeof x==='string'||optOn(x.opt)).map(x=>typeof x==='string'?x:x.t);
+  const conns=txt(c.conns).filter(x=>typeof x==='string'||optEnabled(x.opt)).map(x=>typeof x==='string'?x:x.t);
   insp.l.innerHTML=conns.map(x=>'<li>'+x+'</li>').join('');
   const li=document.querySelector('#complist-ol li[data-id="'+id+'"]');
   if(li)li.classList.add('hot');
@@ -1334,7 +1396,7 @@ function showNet(net){
   svg.classList.add('probing');
   activateNet(net);
   for(const id in COMPS){
-    if(optOn(COMPS[id].opt)&&COMPS[id].nets.includes(net)){
+    if(optEnabled(COMPS[id].opt)&&COMPS[id].nets.includes(net)){
       const g=svg.querySelector('.comp[data-id="'+id+'"]');
       if(g)g.classList.add('active');
     }
@@ -1385,7 +1447,7 @@ function buildList(){
   let n=0;
   for(const id in COMPS){
     const c=COMPS[id];
-    if(!optOn(c.opt))continue;
+    if(!optEnabled(c.opt))continue;
     c.num=String(++n).padStart(2,'0');
     const li=document.createElement('li');
     li.dataset.id=id;
@@ -1405,7 +1467,7 @@ function buildLegend(){
     if(!optOn(NETS[net].opt))continue;
     const r=document.createElement('div');
     r.className='row';r.dataset.net=net;
-    r.innerHTML='<span class="sw" style="background:'+NETS[net].color+'"></span><span>'+NETS[net].name+'</span>';
+    r.innerHTML='<span class="sw" style="background:'+NETS[net].color+'"></span><span>'+txt(NETS[net].name)+'</span>';
     r.addEventListener('pointerenter',()=>{if(!pinned)showNet(net);});
     r.addEventListener('pointerleave',()=>{if(!pinned)resetInspector();});
     r.addEventListener('click',()=>{setPinned({k:'n',id:net});showNet(net);});
@@ -1447,7 +1509,7 @@ const SHOP_ITEMS=[
   {id:'rele',grp:'nucleo',name:'Módulo relé 4 canais 5V',
    spec:'Optoacoplado · ativo em NÍVEL BAIXO · bornes de parafuso NO/COM/NC · header JD-VCC destacável',
    why:'4 canais mesmo usando só 3 — o 4º fica de reserva/expansão.'},
-  {id:'lm2596',grp:'nucleo',name:'Conversor step-down LM2596',
+  {id:'lm2596',grp:'nucleo',opt:'lmpower',name:'Conversor step-down LM2596',
    spec:'Módulo ajustável com trimpot (não o fixo de 5V) · entrada até 35V',
    why:()=>'Abaixa os 12V da fonte para os 5V que alimentam ESP32 e bobinas do relé'+(cfg.tft?' e a tela':'')+'.'},
   {id:'display',grp:'nucleo',opt:'tft',name:'Tela TFT 4.0" SPI colorida — ✔ você já tem',
@@ -1496,17 +1558,20 @@ const SHOP_ITEMS=[
   {id:'sim',grp:'lte',opt:'lte',name:'Chip SIM de dados (nano)',
    spec:'Plano M2M/IoT ou pré-pago com dados · anote o APN da operadora para o firmware',
    why:'O consumo é pequeno (MQTT + keepalive): poucos MB por mês.'},
-  {id:'lm2596b',grp:'lte',opt:'lte',name:'Conversor step-down LM2596 (2º, só do modem)',
+  {id:'lm2596b',grp:'lte',opt:'lte lmdual',name:'Conversor step-down LM2596 (2º, só do modem)',
    spec:'Módulo ajustável com trimpot · igual ao do núcleo · ajustado em 5,0V',
    why:'Fonte de 5V/2A exclusiva do A7672SA — as rajadas do LTE não passam pelo trilho do ESP32.'},
-  {id:'cap',grp:'lte',opt:'lte',name:'Capacitor eletrolítico 1000µF / 16V',
-   spec:'Radial, baixo ESR · vai entre VIN e GND, colado no modem',
-   why:'Segura a tensão nas rajadas de transmissão; sem ele o modem reinicia.'},
+  {id:'xl4016',grp:'lte',opt:'xl',name:'Conversor step-down XL4016 único — substitui os 2 LM2596',
+   spec:'Módulo ajustável de boa procedência · entrada 12V · saída regulada em 5,0V · mínimo 5A contínuos reais · ventilação livre',
+   why:'Um único trilho de 5V alimenta ESP32, JD-VCC dos relés e modem. A marcação nominal “8A” não dispensa margem térmica.'},
+  {id:'cap',grp:'lte',opt:'lte',name:'Capacitores do modem: 1000µF / 16V + 100nF',
+   spec:'1000µF radial baixo ESR + cerâmico 100nF, em paralelo entre VIN e GND, colados no modem',
+   why:'O eletrolítico segura a energia das rajadas e o cerâmico filtra o ruído rápido; juntos reduzem reinícios do modem e da ESP32.'},
 ];
 
 let shopSaved={};
 try{shopSaved=JSON.parse(localStorage.getItem('shop-checklist')||'{}');}catch(e){shopSaved={};}
-function shopVisible(){return SHOP_ITEMS.filter(it=>optOn(it.opt));}
+function shopVisible(){return SHOP_ITEMS.filter(it=>optEnabled(it.opt));}
 function renderShopping(){
   const groups={};
   shopVisible().forEach(it=>(groups[it.grp]=groups[it.grp]||[]).push(it));
@@ -1566,6 +1631,7 @@ function firmwareFlags(){
 }
 function renderCfgCard(){
   const lte=optOn('lte');
+  const power=lte?(cfg.power==='xl4016'?'XL4016 único · 5,0V / ≥5A real':'2× LM2596 · 5,0V'):'LM2596 · 5,0V';
   const pins=['22/21/16 → relés'];
   if(cfg.tft)pins.push('23/18/15/2/4 → tela');
   if(lte)pins.push('26/27/25/33 → modem');
@@ -1574,13 +1640,14 @@ function renderCfgCard(){
     ['Rede',NET_NAME[cfg.net]],
     ['Hotspot',cfg.ap?'ligado · SSID Acesso-Armario':(cfg.net==='lte'?'desligado':'— (só no modo "só 4G")')],
     ['GPIOs',pins.join(' · ')],
-    ['Fonte',lte?'12V / 5A · 2× LM2596':'12V / 3A · 1× LM2596'],
+    ['Alimentação',power],
+    ['Fonte',lte?'12V / 5A':'12V / 3A'],
     ['Consumo',(lte?'≈1,5A típico · picos de 2,5A':'≈1,4A típico')+(cfg.tft?' (+0,05A da tela)':'')+' em 12V'],
     ['Compras',shopVisible().length+' itens na lista']
   ];
   document.getElementById('cfg-dl').innerHTML=rows.map(r=>'<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>').join('');
   document.getElementById('cfg-flags').textContent=firmwareFlags();
-  document.getElementById('shop-variant').innerHTML='Variante: <b>'+(cfg.tft?'com tela TFT':'sem tela')+'</b> · <b>'+NET_NAME[cfg.net]+'</b>'+(cfg.net==='lte'?' · hotspot <b>'+(cfg.ap?'ligado':'desligado')+'</b>':'');
+  document.getElementById('shop-variant').innerHTML='Variante: <b>'+(cfg.tft?'com tela TFT':'sem tela')+'</b> · <b>'+NET_NAME[cfg.net]+'</b>'+(lte?' · <b>'+power+'</b>':'')+(cfg.net==='lte'?' · hotspot <b>'+(cfg.ap?'ligado':'desligado')+'</b>':'');
 }
 const HINTS={
   wifi:'Montagem original: a ESP32 entra no Wi-Fi 2,4GHz da casa e fala com o broker MQTT por ele. Nenhum modem.',
@@ -1599,10 +1666,11 @@ function applyConfig(){
   document.querySelectorAll('.seg').forEach(seg=>{
     const k=seg.dataset.key;
     seg.querySelectorAll('button').forEach(b=>{
-      const cur=k==='net'?cfg.net:(cfg[k]?'1':'0');
+      const cur=(k==='net'||k==='power')?cfg[k]:(cfg[k]?'1':'0');
       b.classList.toggle('on',b.dataset.val===cur);
       b.setAttribute('aria-pressed',String(b.dataset.val===cur));
       if(k==='ap')b.disabled=cfg.net!=='lte';
+      if(k==='power')b.disabled=cfg.net==='wifi';
     });
   });
   document.getElementById('cfg-hint').innerHTML=HINTS[cfg.net];
@@ -1634,7 +1702,7 @@ function applyConfig(){
   /* 3D */
   if(three&&three.applyConfig)three.applyConfig(cfg);
   /* persistência */
-  const hash='#tft='+(cfg.tft?1:0)+'&net='+cfg.net+'&ap='+(cfg.ap?1:0);
+  const hash='#tft='+(cfg.tft?1:0)+'&net='+cfg.net+'&ap='+(cfg.ap?1:0)+'&power='+cfg.power;
   if(location.hash!==hash)history.replaceState(null,'',hash);
   try{localStorage.setItem(CFG_KEY,JSON.stringify(cfg));}catch(e){}
 }
@@ -1642,7 +1710,7 @@ document.querySelectorAll('.seg').forEach(seg=>{
   seg.addEventListener('click',e=>{
     const b=e.target.closest('button'); if(!b||b.disabled)return;
     const k=seg.dataset.key, v=b.dataset.val;
-    if(k==='net')cfg.net=v; else cfg[k]=v==='1';
+    if(k==='net'||k==='power')cfg[k]=v; else cfg[k]=v==='1';
     applyConfig();
   });
 });

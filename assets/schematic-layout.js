@@ -51,10 +51,11 @@ export const ANCHORS = Object.freeze({
 });
 
 function normalizedVariant(variant = {}) {
+  const input = variant ?? {};
   return {
-    tft: variant.tft === true,
-    net: ['wifi', 'dual', 'lte'].includes(variant.net) ? variant.net : 'wifi',
-    power: ['lm2596', 'xl4016'].includes(variant.power) ? variant.power : 'lm2596',
+    tft: input.tft === true,
+    net: ['wifi', 'dual', 'lte'].includes(input.net) ? input.net : 'wifi',
+    power: ['lm2596', 'xl4016'].includes(input.power) ? input.power : 'lm2596',
   };
 }
 

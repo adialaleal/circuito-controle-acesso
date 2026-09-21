@@ -23,7 +23,7 @@ test('orthogonal router emits non-zero segments', () => {
 test('stage 4 contains each supported variant exactly where its wiring applies', () => {
   const variants = [
     { variant: { tft: false, net: 'wifi', power: 'lm2596' }, absent: ['display', 'wire-20', 'wire-27', 'modem', 'wire-28', 'xl4016', 'wire-34'], present: ['lm2596', 'wire-46', 'wire-48'] },
-    { variant: { tft: true, net: 'dual', power: 'lm2596' }, absent: ['xl4016', 'wire-34'], present: ['display', 'wire-20', 'wire-27', 'modem', 'wire-28', 'wire-45', 'wire-46', 'wire-48'] },
+    { variant: { tft: true, net: 'dual', power: 'lm2596' }, absent: ['xl4016', 'wire-34'], present: ['display', 'wire-20', 'wire-21', 'wire-22', 'wire-23', 'wire-24', 'wire-25', 'wire-26', 'wire-27', 'modem', 'wire-28', 'wire-45', 'wire-46', 'wire-47', 'wire-48'] },
     { variant: { tft: false, net: 'lte', power: 'xl4016' }, absent: ['display', 'wire-20', 'lm2596', 'wire-28'], present: ['xl4016', 'borne5xl', 'wire-34', 'wire-41', 'modem', 'wire-42', 'wire-46', 'wire-48'] },
   ];
   for (const { variant, absent, present } of variants) {
@@ -36,9 +36,11 @@ test('stage 4 contains each supported variant exactly where its wiring applies',
 test('invalid or partial variants normalize to the safe baseline', () => {
   const baseline = visibleIds(4, { tft: false, net: 'wifi', power: 'lm2596' });
   assert.deepEqual(visibleIds(4, {}), baseline);
+  assert.deepEqual(visibleIds(4, null), baseline);
   assert.deepEqual(visibleIds(4, { net: 'invalid', power: 'invalid' }), baseline);
   assert.equal(layoutStorageKey({ tft: true, net: 'lte', power: 'xl4016' }), 'schematic-layout:tft:lte:xl4016');
   assert.equal(layoutStorageKey({}), 'schematic-layout:plain:wifi:lm2596');
+  assert.equal(layoutStorageKey(null), 'schematic-layout:plain:wifi:lm2596');
 });
 
 test('every wire endpoint resolves to a real component-pin anchor', () => {

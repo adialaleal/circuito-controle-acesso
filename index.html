@@ -74,10 +74,11 @@
   .tab:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 
   main{padding:18px 22px 60px;max-width:1500px;margin:0 auto}
-  .stage{
-    display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start;
+  .schematic-layout{display:block}
+  .schematic-inspector-strip{display:grid;
+    grid-template-columns:minmax(280px,1.5fr) repeat(3,minmax(210px,1fr));gap:14px;
+    align-items:start;margin:0 0 16px;
   }
-  @media(max-width:980px){.stage{grid-template-columns:1fr}}
 
   .canvas-wrap{
     background:var(--panel);
@@ -128,7 +129,6 @@
   }
 
   /* ---------- inspetor (estilo multímetro) ---------- */
-  aside{position:sticky;top:12px;display:flex;flex-direction:column;gap:14px}
   .inspector{
     background:linear-gradient(180deg,#181f29,#131920);
     border:1px solid var(--line);border-radius:12px;padding:14px 16px;
@@ -317,6 +317,7 @@
   .cfgcard .copy:hover{color:var(--ink);border-color:#3a4552}
 
   @media(max-width:700px){
+    .schematic-inspector-strip{grid-template-columns:1fr}
     .schematic-mode{align-items:stretch;flex-direction:column}
     .schematic-mode .mode-switch,.schematic-mode .guided-nav{justify-content:space-between}
     .guided-stepper{justify-content:space-between;flex:1}
@@ -380,7 +381,7 @@
 </header>
 
 <main>
-<div class="stage">
+<div class="stage schematic-layout">
   <div>
     <div id="view2d">
       <div class="schematic-mode" role="toolbar" aria-label="Visualização do esquema">
@@ -402,6 +403,28 @@
         </div>
       </div>
       <p id="schematic-status" class="schematic-status" role="status" data-state="loading">Carregando a visualização guiada…</p>
+      <aside class="schematic-inspector-strip">
+        <div class="inspector" id="inspector">
+          <div class="tag">Inspetor</div>
+          <h2 id="insp-title">Passe o mouse no circuito</h2>
+          <p class="desc" id="insp-desc">Cada componente e cada fio mostram aqui sua função e as conexões exatas, pino a pino.</p>
+          <ul id="insp-list"></ul>
+          <div class="pinned-note">seleção fixada — clique de novo (ou Esc) para soltar</div>
+        </div>
+        <div class="cfgcard" id="cfgcard">
+          <h3>Ficha da configuração</h3>
+          <dl id="cfg-dl"></dl>
+          <pre id="cfg-flags"></pre>
+          <button class="copy" id="cfg-copy" type="button">copiar flags do firmware</button>
+        </div>
+        <div class="legend" id="legend">
+          <h3>Redes elétricas (fios)</h3>
+        </div>
+        <div class="comp-list" id="complist">
+          <h3>Componentes</h3>
+          <ol id="complist-ol"></ol>
+        </div>
+      </aside>
       <div id="schematic-canvas" class="canvas-wrap">
       <svg id="schematic" viewBox="0 0 1560 1210" xmlns="http://www.w3.org/2000/svg" aria-label="Esquema elétrico do controle de acesso">
         <defs>
@@ -1048,28 +1071,6 @@
     </div>
   </div>
 
-  <aside>
-    <div class="inspector" id="inspector">
-      <div class="tag">Inspetor</div>
-      <h2 id="insp-title">Passe o mouse no circuito</h2>
-      <p class="desc" id="insp-desc">Cada componente e cada fio mostram aqui sua função e as conexões exatas, pino a pino.</p>
-      <ul id="insp-list"></ul>
-      <div class="pinned-note">seleção fixada — clique de novo (ou Esc) para soltar</div>
-    </div>
-    <div class="cfgcard" id="cfgcard">
-      <h3>Ficha da configuração</h3>
-      <dl id="cfg-dl"></dl>
-      <pre id="cfg-flags"></pre>
-      <button class="copy" id="cfg-copy" type="button">copiar flags do firmware</button>
-    </div>
-    <div class="legend" id="legend">
-      <h3>Redes elétricas (fios)</h3>
-    </div>
-    <div class="comp-list" id="complist">
-      <h3>Componentes</h3>
-      <ol id="complist-ol"></ol>
-    </div>
-  </aside>
 </div>
 
 <div id="viewList">

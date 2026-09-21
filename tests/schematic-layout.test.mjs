@@ -121,6 +121,15 @@ test('XL4016 step 2 includes its visible distribution path only with LTE', () =>
   assert.ok(!visibleIds(2, { tft: false, net: 'wifi', power: 'xl4016' }).includes('modem'));
 });
 
+test('XL4016 outputs connect directly to the two Wagos and the canvas is full width', () => {
+  const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(html, /data-wire-id="wire-34"[\s\S]*d="M100,430 V440"/);
+  assert.match(html, /data-wire-id="wire-37"[\s\S]*d="M160,430 V480"/);
+  assert.match(html, /\.schematic-layout\{display:block/);
+  assert.match(html, /\.schematic-inspector-strip\{display:grid/);
+  assert.match(html, /@media\(max-width:700px\)\{[\s\S]*?\.schematic-inspector-strip\{grid-template-columns:1fr/);
+});
+
 test('XL4016 keeps 12V, ground and relay 5V connectivity through its Wago', () => {
   const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   const ids = new Set(visibleIds(3, { tft: false, net: 'lte', power: 'xl4016' }));

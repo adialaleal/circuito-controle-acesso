@@ -128,7 +128,10 @@ test('XL4016 outputs connect directly to the two Wagos and the canvas is full wi
   assert.match(html, /<circle class="terminal-dot" data-terminal-anchor="borne5xl\.plus"[^>]*cx="100" cy="440"/);
   assert.match(html, /<circle class="terminal-dot" data-terminal-anchor="borne5xl\.ground"[^>]*cx="160" cy="480"/);
   assert.match(html, /\.schematic-layout\{display:block/);
+  assert.match(html, /\.schematic-layout\{display:block;width:100%;min-width:0/);
   assert.match(html, /\.schematic-inspector-strip\{display:grid/);
+  assert.match(html, /\.canvas-wrap\{[\s\S]*?width:100%;[\s\S]*?min-width:0/);
+  assert.match(html, /<aside class="schematic-inspector-strip">[\s\S]*?<\/aside>\s*<div id="schematic-canvas" class="canvas-wrap">/);
   assert.match(html, /@media\(max-width:700px\)\{[\s\S]*?\.schematic-inspector-strip\{grid-template-columns:1fr/);
 });
 
